@@ -108,3 +108,34 @@ Ege'nin isteği: bir sürümde 11'e 11, herkes kendi rolünde.
 - **Ölçek deneyi (yayın için güçlü):** GNN politikası 4v4'te eğitilip 5v5, 7v7 ve 11v11'e sıfır-atış genellenir mi, MLP genellemez mi (H2). Ek olarak her ölçekte ayrı eğitim ve ince ayar karşılaştırılır.
 - **Dürüst risk:** 22 ajanlı 11'e 11'de RL'i sıfırdan öğretmek çok pahalı (Google Research Football 11v11 on milyonlarca adım ve büyük işlem gücü ister). Tek RTX 3060 ile gerçekçi hedef: 4v4, 5v5 ve 7v7'de tam eğitim; 11v11'de müfredatla, 4v4/7v7 ağırlıklarından başlayarak ince ayar ve el yazması rol sezgiseliyle karşılaştırma. 11v11 sonuçları "ön sonuç" olarak etiketlenir, eğitim bütçesi açıkça yazılır.
 - Oyunda: 11v11 menüde ayrı mod (büyük saha, kadro ve formasyon seçimi); görüntü ve performans için en çok 22 oyuncu LOD ve kumaş kapalı.
+
+## 11. İşlem bütçesi: tek hafta sonu (en çok ~48 saat), RTX 3060 veya DGX Spark
+
+**Kaynaklar:** masaüstü: Ryzen 7 5800X (8 çekirdek / 16 iş parçacığı), 46 GB RAM, RTX 3060 12 GB. DGX Spark: GB10, 20 ARM çekirdek, 128 GB birleşik bellek. **Darboğaz GPU değil, simülasyon çekirdekleridir** (ağlar küçük, yaklaşık 1 milyon parametre). Bu yüzden iki makine paralel kullanılır (tohumlar ikiye bölünür): toplam yaklaşık 34 simülasyon çekirdeği.
+
+**Mühendislik ile hesaplama ayrı sayılır:** ortam, eğitimci, istatistik hattı ve analiz hafta sonundan önce yazılıp küçük ölçekte sınanır. "Hafta sonu" yalnızca toplu koşular, değerlendirme ve tablolar içindir.
+
+**Tahmini hız (M0'da ölçülüp değiştirilecek, şimdilik varsayım):** ağsız simülasyon ~0,2 ms/kare, karar sıklığı 10 Hz (6 kare) ⇒ ~1,2 ms/karar ⇒ çekirdek başına ~800 karar/s, 14 işçi ile ~11 bin karar/s ⇒ ~40 milyon karar/saat. Bir eğitim koşusu 25 milyon karar (4v4'te ~200 milyon ajan adımı) ≈ 1 saat.
+
+| Blok | Koşu | Tohum | Yaklaşık makine-saati |
+|---|---|---|---|
+| Çekirdek karşılaştırma: IPPO (M1), MAPPO (M2), MAPPO+GNN (M3) | 3 yöntem | 5 | 15 |
+| Ablasyonlar: iletişim yarıçapı (3 değer), merkezi kritik kapalı, ödül şekillendirme kapalı | 5 varyant | 3 | 15 |
+| Evrimsel/PBT (M6) | 1 | 3 | 6 |
+| QMIX (M4) | 1 | 3 | 3 |
+| Self-play ligi (M7) | 1 | 2 | 8 |
+| Değerlendirme: tam turnuva, sıfır-atış ölçek (3v3, 5v5, 7v7, 11v11), istatistik hattı | | | 3 |
+| **Toplam** | | | **~50 makine-saati** |
+
+İki makine paralelken ≈ 25–30 saat duvar saati (güvenlik payı ile hafta sonuna sığar). **Tek makinede (yalnız 3060 ya da yalnız Spark):** zorunlu bloklar (çekirdek karşılaştırma 5 tohum, ablasyonlar 3 tohum, değerlendirme) ≈ 33 saat; QMIX, M6 ve M7 isteğe bağlıdır ve zaman kalırsa koşulur.
+
+**Zorunlu / isteğe bağlı:**
+- Zorunlu: B0 (el yazması AI), B2 (klasik sürü sezgiseli), M1, M2, M3, iletişim ablasyonu, turnuva ve istatistikler, GNN ölçek genellemesi (yalnız çıkarım, eğitim yok).
+- İsteğe bağlı: M4 (QMIX), M5 (MADDPG), M6 (ES/PBT), M7 (self-play ligi), GRF dış doğrulaması, davranış klonlama (B1).
+- **11'e 11: yalnız değerlendirme** (sıfır-atış genelleme ve el yazması rol sezgiseli ile karşılaştırma), eğitim yok; "ön sonuç" etiketi.
+
+**Riskler ve önlemler:**
+- Hız tahmini tutmazsa (300 karar/s/çekirdek altı): gözlemi küçült, 5 Hz karar, rakip AI'nın maliyetini azalt, koşu uzunluğunu 15 milyon karara indir ve tohum sayısını koru.
+- Hafta sonu bütçesi dolarsa tohum sayısını değil yöntem sayısını azalt (en az 5 tohum çekirdek karşılaştırmada korunur).
+- Sürekli kontrol noktası ve devam edebilme: bir makine çökerse koşu kaldığı yerden sürer.
+- Uzun koşular `claude-train` ile ayrı tmux oturumunda, wandb ile izlenir.
