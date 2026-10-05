@@ -41,4 +41,6 @@ git push -q -f origin main
 # 5) Pages'i main kokunden ac (zaten aciksa guncelle)
 gh api -X POST "repos/$SITE/pages" -f "source[branch]=main" -f "source[path]=/" >/dev/null 2>&1 \
   || gh api -X PUT "repos/$SITE/pages" -f "source[branch]=main" -f "source[path]=/" >/dev/null 2>&1 || true
-echo "PAGES_URL https://egerberkuslu.github.io/footballer-4v4-play/"
+vis=$(gh repo view "$SITE" --json visibility -q .visibility)
+if gh api "repos/$SITE/pages" >/dev/null 2>&1; then echo "PAGES_URL https://egerberkuslu.github.io/footballer-4v4-play/"
+else echo "UYARI: Pages kapali (site deposu $vis; ucretsiz planda Pages yalniz public depoda calisir). Oyun yalnizca depoda duruyor."; fi
