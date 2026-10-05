@@ -82,3 +82,29 @@ Ege akademik yayın yapacak ve yöntemleri birbiriyle kıyaslamak istiyor. Bu y�
 **Dış doğrulama:** ortam bizim yazdığımız bir simülatör olduğu için yalnız kendi sonuçlarımız hakem için yetmez. İkinci bir ölçüt olarak Google Research Football (Kurach ve ark.) akademi senaryolarında (3v1 kaleciyle, hızlı hücum) M2/M3'ü çalıştırıp literatürdeki MAPPO sonuçlarıyla tutarlılığı doğrula. Atıflar gerçek makalelere karşı doğrulanır (litreview/OpenAlex; her atıf kontrol edilir).
 
 **Tekrar üretilebilirlik:** sabit tohum, DVC boru hattı, wandb kayıtları, kod ve ortam sürümü yayınla; her tablo bir betikten üretilir.
+
+## 9. Maç istatistikleri (her yöntem için aynı ölçüm hattı)
+
+Simülasyon her maçta olay kaydı (event log) tutar; tüm istatistikler bu kayıttan betikle üretilir (elle girilen değer yok). Çıktı: maç başına JSON/Parquet, tablo ve şekiller `rl/analysis/` altında.
+
+| Grup | Ölçüt |
+|---|---|
+| Sonuç | gol, gol farkı, galibiyet/beraberlik/mağlubiyet, Elo/TrueSkill |
+| Şut ve xG | şut sayısı, isabetli şut, **xG** (beklenen gol), gol − xG (bitiricilik), şut başına xG, şut mesafesi ve açısı, baskı altında şut oranı |
+| Pas | denenen ve başarılı pas, **pas isabeti (%)**, ileri/yatay/geri pas oranı, pas uzunluğu, ilerletici pas, kilit pas (şuta giden pas), pas ağı (kim kime) |
+| Top hâkimiyeti | **topa sahip olma (%)**, bölgelere göre sahip olma, topu kapma ve kaybetme, topu kaptıktan sonra şuta kadar süre (geçiş hızı), PPDA (rakip pasına karşı savunma eylemi) |
+| Takım yapısı | **takım arkadaşları arası ortalama/en küçük mesafe**, takım genişliği ve derinliği, ağırlık merkezi, biçim (şekil) tutarlılığı, ofsayt çizgisi yüksekliği, boşluk doldurma, ısı haritaları |
+| Savunma/disiplin | müdahale sayısı ve başarısı, faul, kart, ofsayt, kurtarış yüzdesi |
+| Koordinasyon (sürü) | oyuncular arası mesaj kullanımı (iletişim varsa), eşzamanlı hareket korelasyonu, rol çeşitliliği (rol dağılımı entropisi) |
+
+**xG modeli:** simülasyonun kendi şutları üzerinde (mesafe, açı, top hızı, şut türü/falso, baskı, kaleci konumu, kalan süre) lojistik regresyon ve gradyan artırma ile eğitilir, ayrı doğrulama kümesinde kalibrasyon eğrisi ve log-loss raporlanır. Bu "sim-xG"dir; gerçek futbol xG'siyle karıştırılmaz ve öyle adlandırılır. Model sabit tutulur, tüm yöntemler aynı xG modeliyle değerlendirilir.
+
+## 10. 11'e 11 ve rollü sürüm
+
+Ege'nin isteği: bir sürümde 11'e 11, herkes kendi rolünde.
+
+- **Parametrik saha ve kadro:** şu an saha 40×25 m ve 4'e 4 sabit (`pitch.ts`, kale boyu, ceza sahası, ofsayt, kural ayarları). Önce saha, kale, ceza sahası ve oyuncu sayısı yapılandırılabilir hâle getirilir (4v4, 5v5, 7v7 halı saha, 11v11), kurallar ve çizgiler ölçeğe göre türer.
+- **Roller:** KL (kaleci), STP (stoper), BEK, DOS (defansif orta saha), OOS, KNT (kanat), FRV (forvet). Formasyon (4-4-2, 4-3-3, 3-5-2) rol başına temel konum ve görev verir; politikaya rol gömmesi (role embedding) ve formasyon konumu gözlem olarak girer. Rol bazlı ödül (bek: genişlik, stoper: hat tutma) isteğe bağlı ablasyon.
+- **Ölçek deneyi (yayın için güçlü):** GNN politikası 4v4'te eğitilip 5v5, 7v7 ve 11v11'e sıfır-atış genellenir mi, MLP genellemez mi (H2). Ek olarak her ölçekte ayrı eğitim ve ince ayar karşılaştırılır.
+- **Dürüst risk:** 22 ajanlı 11'e 11'de RL'i sıfırdan öğretmek çok pahalı (Google Research Football 11v11 on milyonlarca adım ve büyük işlem gücü ister). Tek RTX 3060 ile gerçekçi hedef: 4v4, 5v5 ve 7v7'de tam eğitim; 11v11'de müfredatla, 4v4/7v7 ağırlıklarından başlayarak ince ayar ve el yazması rol sezgiseliyle karşılaştırma. 11v11 sonuçları "ön sonuç" olarak etiketlenir, eğitim bütçesi açıkça yazılır.
+- Oyunda: 11v11 menüde ayrı mod (büyük saha, kadro ve formasyon seçimi); görüntü ve performans için en çok 22 oyuncu LOD ve kumaş kapalı.
