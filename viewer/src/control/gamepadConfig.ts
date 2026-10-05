@@ -2,7 +2,31 @@
 // Ayarlar localStorage 'gamepadSettings' altinda kalici (erisilemezse bellekte).
 // Kullanim: getSettings/setSettings/resetSettings, ACTIONS, startLearn, onPadChange, rumble.
 
-export type ActionId = 'pass' | 'shoot' | 'lob' | 'switch' | 'sprint' | 'tackle' | 'precise' | 'pause' | 'camera' | 'hints' | 'camPrev' | 'camNext'
+export type ActionId =
+  | 'pass'
+  | 'shoot'
+  | 'lob'
+  | 'through'
+  | 'driven'
+  | 'finesse'
+  | 'shield'
+  | 'tackle'
+  | 'slide'
+  | 'press'
+  | 'jockey'
+  | 'switch'
+  | 'teamPress'
+  | 'sprint'
+  | 'precise'
+  | 'pause'
+  | 'camera'
+  | 'hints'
+  | 'camPrev'
+  | 'camNext'
+
+/** baglam: topla (hucum, duran toplar dahil) / topsuz (savunma) / genel */
+export type Ctx = 'topla' | 'topsuz' | 'genel'
+export type Preset = 'fifa' | 'klasik'
 
 /** mantiksal dugme adlari (PS adlari); profil bunlari ham indekse cevirir */
 export type Logical =
@@ -31,25 +55,46 @@ export type RawBinding = { t: 'b'; i: number } | { t: 'a'; i: number; dir: 1 | -
 export interface ActionDef {
   id: ActionId
   ad: string
+  ctx: Ctx
+  fifa: Logical | null // FIFA / EA FC PlayStation duzeni
+  klasik: Logical | null // eski duzen (null: bu on ayarda yok)
+  /** uyumluluk: FIFA varsayilani */
   varsayilan: Logical
 }
 
+const A = (id: ActionId, ad: string, ctx: Ctx, fifa: Logical | null, klasik: Logical | null): ActionDef => ({ id, ad, ctx, fifa, klasik, varsayilan: (fifa ?? klasik ?? 'cross') as Logical })
+
 export const ACTIONS: ActionDef[] = [
-  { id: 'pass', ad: 'Pas', varsayilan: 'cross' },
-  { id: 'shoot', ad: 'Şut (basılı tut: şarj)', varsayilan: 'circle' },
-  { id: 'lob', ad: 'Aşırtma / ortala', varsayilan: 'square' },
-  { id: 'switch', ad: 'Oyuncu değiştir', varsayilan: 'triangle' },
-  { id: 'sprint', ad: 'Sprint (analog)', varsayilan: 'r2' },
-  { id: 'tackle', ad: 'Müdahale (dokun) / jockey (basılı)', varsayilan: 'r1' },
-  { id: 'precise', ad: 'Hassas yürüme', varsayilan: 'l2' },
-  { id: 'pause', ad: 'Menü', varsayilan: 'options' },
-  { id: 'camera', ad: 'Yayın kamerası', varsayilan: 'share' },
-  { id: 'hints', ad: 'Pas halkaları', varsayilan: 'ddown' },
-  { id: 'camPrev', ad: 'Önceki kamera', varsayilan: 'dleft' },
-  { id: 'camNext', ad: 'Sonraki kamera', varsayilan: 'dright' },
+  // topla
+  A('pass', 'Pas (basılı tut: güç)', 'topla', 'cross', 'cross'),
+  A('shoot', 'Şut (basılı tut: şarj)', 'topla', 'circle', 'circle'),
+  A('lob', 'Orta / aşırtma', 'topla', 'square', 'square'),
+  A('through', 'Ara pas', 'topla', 'triangle', null),
+  A('driven', 'Sert pas (pas ile)', 'topla', 'l1', null),
+  A('finesse', 'Falsolu şut (şut ile)', 'topla', 'r1', null),
+  A('shield', 'Top koruma', 'topla', 'l2', null),
+  // topsuz
+  A('tackle', 'Müdahale', 'topsuz', 'square', 'r1'),
+  A('slide', 'Kayarak müdahale', 'topsuz', 'circle', null),
+  A('press', 'Baskı (basılı tut)', 'topsuz', 'cross', null),
+  A('jockey', 'Jockey (basılı tut)', 'topsuz', 'l2', null),
+  A('switch', 'Oyuncu değiştir', 'topsuz', 'l1', 'triangle'),
+  A('teamPress', 'Takım baskısı', 'topsuz', 'r1', null),
+  // genel
+  A('sprint', 'Sprint (analog)', 'genel', 'r2', 'r2'),
+  A('precise', 'Hassas yürüme', 'genel', null, 'l2'),
+  A('pause', 'Menü', 'genel', 'options', 'options'),
+  A('camera', 'Yayın kamerası', 'genel', 'share', 'share'),
+  A('hints', 'Pas halkaları', 'genel', 'ddown', 'ddown'),
+  A('camPrev', 'Önceki kamera', 'genel', 'dleft', 'dleft'),
+  A('camNext', 'Sonraki kamera', 'genel', 'dright', 'dright'),
 ]
 
+/** bu on ayarda eylemin varsayilan mantiksal dugmesi (yoksa null) */
+export const defaultOf = (a: ActionDef, preset: Preset): Logical | null => a[preset]
+
 export interface GamepadSettings {
+  preset: Preset // 'fifa' (varsayilan) | 'klasik'
   deadL: number // sol cubuk olu bolge 0.05..0.4
   deadR: number
   curve: 'dogrusal' | 'ustel'
@@ -62,6 +107,7 @@ export interface GamepadSettings {
 }
 
 export const DEFAULTS: GamepadSettings = {
+  preset: 'fifa',
   deadL: 0.18,
   deadR: 0.18,
   curve: 'dogrusal',
@@ -81,6 +127,7 @@ const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v))
 
 function sanitize(s: Partial<GamepadSettings>): GamepadSettings {
   const o = { ...DEFAULTS, ...s }
+  o.preset = o.preset === 'klasik' ? 'klasik' : 'fifa'
   o.deadL = clamp(Number(o.deadL), 0.05, 0.4)
   o.deadR = clamp(Number(o.deadR), 0.05, 0.4)
   o.camSpeed = clamp(Number(o.camSpeed), 0.3, 2)
@@ -112,6 +159,11 @@ function persist() {
 export const getSettings = (): GamepadSettings => cur
 export function setSettings(patch: Partial<GamepadSettings>) {
   cur = sanitize({ ...cur, ...patch, bindings: patch.bindings ?? cur.bindings })
+  persist()
+}
+/** on ayar degistir; ozel atamalar sifirlanir */
+export function setPreset(p: Preset) {
+  cur = sanitize({ ...cur, preset: p, bindings: {} })
   persist()
 }
 export function resetSettings() {
@@ -198,7 +250,8 @@ export function actionLabel(id: ActionId): string {
     return `Eksen ${b.i}${b.dir > 0 ? '+' : '-'}`
   }
   const def = ACTIONS.find((a) => a.id === id)!
-  return logicalLabel(def.varsayilan)
+  const l = defaultOf(def, cur.preset)
+  return l ? logicalLabel(l) : '—'
 }
 
 // ------------------------------------------------------------------ atama sihirbazi
@@ -249,7 +302,9 @@ export function learnStep(buttons: readonly { pressed: boolean }[], axes: readon
   }
   if (!hit) return true
   const b: RawBinding = hit
-  const conflicts = (Object.keys(cur.bindings) as ActionId[]).filter((k) => k !== learning!.id && cur.bindings[k] && same(cur.bindings[k]!, b))
+  const ctxOf = (id: ActionId) => ACTIONS.find((a) => a.id === id)!.ctx
+  const overlap = (x: ActionId, y: ActionId) => ctxOf(x) === ctxOf(y) || ctxOf(x) === 'genel' || ctxOf(y) === 'genel'
+  const conflicts = (Object.keys(cur.bindings) as ActionId[]).filter((k) => k !== learning!.id && cur.bindings[k] && same(cur.bindings[k]!, b) && overlap(k, learning!.id))
   const { id, cb } = learning
   learning = null
   learnBase = null

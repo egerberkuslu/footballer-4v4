@@ -43,3 +43,38 @@ Menüden "Tek oyunculu maç" (ya da üstte "Maç (M)"). WASD/oklar hareket, Shif
 
 ## Betikler
 `scripts/qa-round.sh <etiket>` (tsc + Firefox + 90 s maç + senaryolar), `qa-match.mjs` (maç/izleme, `--half`, `--watch`), `qa-scenarios.mjs`, `qa-vartrace.mjs`, `qa-dribble.mjs`, `qa-boot.mjs`, `qa-menu.mjs`, `qa-fulltime.mjs`, `qa-keeper.mjs`, `qa-perf.mjs`, `qa-baseline.mjs`, `qa-visual.mjs`. Hepsi `scripts/run-browser.sh` ile çalışır.
+
+
+---
+# SON REGRESYON (derleme `npm run build` temiz, tsc temiz) - 06:50-07:40 durumu
+
+## BLOKLAYICI
+Yok (bu turda görülmedi).
+
+## GEÇTİ (doğrulandı, kanıt qa/f1..f7)
+- Firefox antrenman + mac: pageerror yok. Chrome 90 s maç pageerror 0, NaN 0, takılma 0.
+- Senaryolar 9/9: taç, korner, kaleci 3 s (insan + AI), ofsayt, penaltı, elle VAR (gerçek şut), topa kayma, net aut.
+- VAR hakem izi (qa/f3): dinleme sonrası monitöre 2,06 s, monitördeyken en büyük uzaklaşma adımı 0,12 m (önceki 6,04 m ışınlanma kalktı), saat geri sarma yok.
+- VAR ekranında "Sıra sende" ipucu, şut çubuğu, falso göstergesi ve pas halkaları gizli (qa/f1/sc/13-var-var-run.png); yalnız "VAR İNCELEMESİ" bandı ve yayın etiketi var.
+- Maç sonu: "Yeniden oyna Enter" ve "Ana menü Esc" düğmeleri görünüyor; Enter yeni maç başlatıyor (skor 0-0, play), Esc ana menüyü açıyor (qa/f6). Gamepad ✕/○ ile bu akış denenmedi.
+- Kırmızı kart (qa/f7): arkadan kayma kırmızı, oyuncu köşeye yürür (14,-16), rozet "🟥 DEP 8 · 30 sn" 30 sn'den 0'a iniyor (duran toplarda donuyor), ~42 s duvar saatinde 'player-return' ve oyuncu sahaya dönüyor; 4'e 3 oynanıyor.
+- Yükleme → Oyna (~6 s) → Menü → tek oyunculu maç temiz (önceki tur).
+
+## KOZMETİK / ORTA
+1. Ayakta müdahale (qa/f2, qa/f4): 120 s maçta 10 müdahale teması, ballFirst yalnız 1 (%10; hedef ≥%40), 8 faul (hedef ≤6), 1 sarı. Fakat faullerin 8'i de AI oyuncuların (2 ve 3) gövde/omuz temaslarından (7 arkadan gövde), bot müdahalesinden değil; AI savunmacı aynı rakibe art arda 4 faul yaptı (qa/f2/mac/sonuc.json 'ev'). Kontrollü deneme betiği (qa-tackle.mjs) rakip koşusuna takıldığı için yalnız yaklaşık veri verdi: basılan 5 ayakta müdahalenin 2'si temiz top kazanma, 1'i faul; 7 kayarak müdahalenin 3'ü top, 2'si faul (biri arkadan, meşru). ballFirst hedefi doğrulanamadı, AI gövde teması fazlası J2/F2'ye iletildi.
+2. Kaleci dalışları (qa/f5): 22 m/s şutlarda altı hedeften (sol/sağ x alçak/orta/yüksek) 24 koşuda dalış animasyonları görüldü (dive-low-l, dive-high-l/r, catch-high, collect); alçak/orta şutlarda kaleci çoğu kez dalmıyor ve gol oluyor, bazı dalışlar yanlış yöne (aynı şut için sağ ve sol karışık), yani zar tasarımı çalışıyor. Dalışın kare dizisi görsel olarak incelenemedi: 'Yan ağ' ve 'Kale arkası' kameraları kaleciyi çerçevelemiyor (kamera ağın içinde kalıyor).
+3. Kırmızı kartlı oyuncu köşede ayakta 'jog' animasyonuyla duruyor (ayak kayması olasılığı; kamera dışında olduğu için görsel doğrulanmadı).
+4. VAR monitör tekrarında ağ düğümleri dikey beyaz çizgiler gibi (yağmur) görünüyor (qa/f1/sc/15-var-var-var-monitor.png); kaleci tekrarda sade turuncu-mavi figür.
+5. qa-visual.mjs yakın plan kameraları kaleci/hakemi çerçevelemiyor (betik sorunu), yeni GLB'lerle hakem/kaleci/v2/v3 yakın planları BU turda tekrar çekilemedi.
+
+## DOĞRULANAMADI (kalan)
+- Gamepad/kol akışı Firefox'ta (sahte `navigator.getGamepads`), ayar ekranı girdi kilidi, tuş atama sihirbazı, titreşim.
+- Falso (`,` `.`, tekerlek, önizleme eğrisi) ekran görüntüsü.
+- Kıl payı çizgi VAR'ın insan şutuyla (+3 / +9 cm) ve ofsayt VAR kolunun uçtan uca süresi (≤12 s), "HÜCUM · sağ ayak bileği" etiketi.
+- Hakem/kaleci/v2/v3 gövdeli oyuncu yakın planları (yeni saç atlası) ve v2 forma yan dikişi.
+- Altı kaleci dalışının kare dizisi (kamera çerçevesi sorunu), kale dışı şutta (|z|>2,7) dalmama.
+- Alt yol (`/footballer-4v4/`) M2 tarafından doğrulandı, tekrar edilmedi.
+- AI-AI 2×150 s gol 3-7 aralığı: 420 s'lik iki izleme 2-6 / (önceki) 0-4; yön yanlılığı şüphesi sürüyor (J2'ye iletildi).
+
+## Ek (07:55): yakın planlar (qa/f8, scripts/qa-closeup.mjs, kamera zorlamalı)
+GEÇTİ: yeni GLB'lerle saç renkli ve kıvırcık, forma çizgileri/numara temiz, mavi formada önceki leke görülmedi, kaleci turuncu forma kucaklama (keeper-catch) pozu ve topla el teması makul; hakem VAR monitöründe saç koyu kıvırcık (qa/r9-senaryo). Çerçeveleme düzeltmesi: betik artık kamerayı her 8 ms'de hedefe zorluyor. v2/v3 gövdeli oyuncuların hangileri olduğunu ayırt edemedim, forma yan dikişi için ayrı bir bakış yapılmadı. Doğrulanamayanlar listesindeki "yeni GLB yakın planları" maddesi bu kapsamda kapandı (v2/v3 hariç).

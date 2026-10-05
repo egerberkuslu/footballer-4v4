@@ -3,6 +3,7 @@
 import { game } from '../game/store'
 import {
   ACTIONS,
+  defaultOf,
   PROFILE_BUTTONS,
   detectProfile,
   getPadInfo,
@@ -162,9 +163,10 @@ function pollPadRaw(): PadFrame | null {
   const analog = { l2: logicalValue(gp, 'l2', std, pi.profile), r2: logicalValue(gp, 'r2', std, pi.profile) }
   for (const a of ACTIONS) {
     const b = S.bindings[a.id]
-    const v = b ? rawValue(gp, b) : logicalValue(gp, a.varsayilan, std, pi.profile)
+    const dl = defaultOf(a, S.preset)
+    const v = b ? rawValue(gp, b) : dl ? logicalValue(gp, dl, std, pi.profile) : 0
     // analog tetiklerde esik ayari, dugmelerde 0.5
-    const isTrig = !b && (a.varsayilan === 'l2' || a.varsayilan === 'r2')
+    const isTrig = !b && (dl === 'l2' || dl === 'r2')
     const h = v > (isTrig ? S.trigger : 0.5)
     held[a.id] = h
     down[a.id] = h && !prev[a.id]

@@ -13,9 +13,10 @@ import { isGuest, lockedPlayer } from '../mp/role'
 import { isVarActive } from '../var/store'
 import { currentRules } from '../rules/instance'
 import { gaussNoise, overchargeSigma, startCharge, cancelCharge, takeCharge, tickCharge } from './actions'
-import { setControlled, stepLocomotion } from './locomotion'
-import { CURL_W } from './aim'
-import { CURL_STEPS, bumpCtl, ctl, setCurl, setCurlAnalog } from './store'
+import { passSpeed, setControlled, setShield, stepLocomotion } from './locomotion'
+import { CURL_W, solveShot } from './aim'
+import { CURL_STEPS, V_MAX, V_MIN, bumpCtl, ctl, setCurl, setCurlAnalog } from './store'
+import { getSettings } from './gamepadConfig'
 import { pollPad, installRumble } from './gamepad'
 import { gamepadSettingsOpen } from '../ui/gamepadUi'
 import { toggleCam } from './ShotController'
@@ -27,6 +28,49 @@ const keys = new Set<string>()
 let lobMod = false
 const JOCKEY_HOLD_MS = 180 // E bu sureden uzun basiliysa jockey, kisa dokunus mudahale
 let eDown = 0
+// FIFA duzeni: pas/sut ek bilgisi (guc, sert pas, ara pas, ozel falsolu sut); aksiyon olusurken tuketilir
+let padPassT = 0
+let padExtra = { power: 0, driven: false, through: false, finesse: false }
+
+/** ara pas: ileri kosan en iyi takim arkadasinin hizi x 0.7 s onune (yoksa null) */
+function throughTarget(p: Player, dx: number, dz: number, steer: boolean) {
+  const fd = game.match.attackDir[p.team]
+  let best: Player | null = null
+  let bs = -Infinity
+  for (const q of game.players) {
+    if (q.team !== p.team || q.id === p.id || q.sentOff || q.role === 'kaleci') continue
+    const rx = q.x - p.x
+    const rz = q.z - p.z
+    const d = Math.hypot(rx, rz)
+    if (d < 2 || d > 35 || rx * fd < 1) continue
+    let sc = rx * fd - 0.15 * d
+    if (steer) sc += 6 * ((rx * dx + rz * dz) / d)
+    if (sc > bs) {
+      bs = sc
+      best = q
+    }
+  }
+  if (!best) return null
+  const sp = Math.hypot(best.vx, best.vz)
+  const ax = sp > 1 ? best.x + best.vx * 0.7 : best.x + fd * 3
+  const az = sp > 1 ? best.z + best.vz * 0.7 : best.z
+  return { x: Math.max(-HL + 0.5, Math.min(HL - 0.5, ax)), y: 0, z: Math.max(-12, Math.min(12, az)) }
+}
+
+/** ozel falsolu sut: kivrim +-2.5; baslangic yonu kale ortasina dogru acilir, top uzak kosede girer */
+function finesseCurl(bx: number, bz: number, side: number, ay: number, az: number, speed: number) {
+  const slope = (c: number) => {
+    const sh = solveShot(bx, bz, side, ay, az, speed, 'normal', c)
+    return sh.v.z / (Math.abs(sh.v.x) || 1)
+  }
+  const gx = side * HL
+  const s0 = (az - bz) / (Math.abs(gx - bx) || 1)
+  const want = -Math.sign(az - 0 || 1) // kale ortasina (z=0) dogru
+  const a = (slope(2.5) - s0) * want
+  const b = (slope(-2.5) - s0) * want
+  return a >= b ? 2.5 : -2.5
+}
+
 /** sag cubuk (gamepad) son degeri: kamera ve nisan icin */
 export const padLook = { x: 0, y: 0 }
 let padCam = 4
@@ -258,32 +302,86 @@ export function MatchControl() {
 
     // gamepad: profil/atama/olu bolge gamepad.ts + gamepadConfig.ts'te
     const gp = gamepadSettingsOpen() ? null : pollPad() // ayar ekrani acikken oyun girdisi yok
+    let padJockey = false
+    let forceMove: [number, number] | null = null
     if (gp) {
+      const fifa = getSettings().preset === 'fifa'
       if (Math.hypot(gp.move.x, gp.move.y) > 0) {
-        const k = gp.held.precise ? 0.5 : 1 // hassas yurume
+        const k = !fifa && gp.held.precise ? 0.5 : 1 // klasik: hassas yurume
         ix = gp.move.x * k
         iy = gp.move.y * k
       }
       sprint = sprint || gp.held.sprint
-      if (gp.down.pass) pending.current = 'pass'
-      if (gp.down.lob) pending.current = 'lob'
-      if (gp.down.shoot) startCharge()
-      if (gp.up.shoot && ctl.charge >= 0) pending.current = 'shoot'
-      // sut sarjinda sol cubuk X = falso (-1..+1), sag cubuk nisan
-      if (gp.held.shoot) setCurlAnalog(gp.move.x)
-      else if (ctl.curlAnalog !== 0) setCurlAnalog(0)
-      // tackle dugmesi dokunus: mudahale, basili: jockey; L1 basili iken: kayarak
-      if (gp.down.tackle) {
-        if (gp.l1) pending.current = 'slide'
-        else padE = performance.now()
-      }
-      if (gp.up.tackle && padE > 0) {
-        if (performance.now() - padE < JOCKEY_HOLD_MS) pending.current = 'tackle'
-        padE = 0
-      }
-      if (gp.down.switch && lk < 0) {
-        const n = nearestToBall(team, p.id)
-        if (n) setControlled(n.id)
+      if (fifa) {
+        // FIFA / EA FC duzeni, baglam duyarli: topla / topsuz
+        const topla = p.hasBall || (game.match.phase !== 'play' && game.match.restart?.taker === p.id)
+        setShield(p.id, topla && gp.held.shield)
+        if (topla) {
+          // pas: basili tut = guc; L1 = sert pas; triangle = ara pas
+          if (gp.down.pass) padPassT = performance.now()
+          if (gp.up.pass && padPassT > 0) {
+            const t = performance.now() - padPassT
+            padPassT = 0
+            padExtra = { power: t < 180 ? 0 : Math.min(1, 0.25 + (t - 180) / 900), driven: gp.held.driven, through: false, finesse: false }
+            pending.current = 'pass'
+          }
+          if (gp.down.through) {
+            padExtra = { power: 0, driven: false, through: true, finesse: false }
+            pending.current = 'pass'
+          }
+          if (gp.down.lob) pending.current = 'lob'
+          if (gp.down.shoot) startCharge()
+          if (gp.up.shoot && ctl.charge >= 0) {
+            padExtra = { power: 0, driven: false, through: false, finesse: gp.held.finesse }
+            pending.current = 'shoot'
+          }
+          // sut sarjinda sol cubuk X = falso (R1 ile ozel falsoda otomatik), sag cubuk nisan
+          if (gp.held.shoot) setCurlAnalog(gp.held.finesse ? 0 : gp.move.x)
+          else if (ctl.curlAnalog !== 0) setCurlAnalog(0)
+        } else {
+          padPassT = 0
+          if (ctl.curlAnalog !== 0) setCurlAnalog(0)
+          if (gp.down.tackle) pending.current = 'tackle'
+          if (gp.down.slide) pending.current = 'slide'
+          if ((gp.down.switch || gp.down.teamPress) && lk < 0) {
+            // takim baskisi icin AI API yok: ikisi de en yakin oyuncuya gecer
+            const n = nearestToBall(team, p.id)
+            if (n) setControlled(n.id)
+          }
+          if (gp.held.jockey) padJockey = true
+          if (gp.held.press) {
+            // baski: topu suren (yoksa topa en yakin) rakibe yuru, yaklasinca jockey
+            const owner = game.players.find((q) => q.hasBall && q.team !== p.team) ?? nearestToBall(1 - team)
+            if (owner) {
+              const ddx = owner.x - p.x
+              const ddz = owner.z - p.z
+              const dd = Math.hypot(ddx, ddz)
+              if (dd > 2.2) forceMove = [ddx / dd, ddz / dd]
+              else padJockey = true
+            } else padJockey = true
+          }
+        }
+      } else {
+        // klasik duzen
+        if (gp.down.pass) pending.current = 'pass'
+        if (gp.down.lob) pending.current = 'lob'
+        if (gp.down.shoot) startCharge()
+        if (gp.up.shoot && ctl.charge >= 0) pending.current = 'shoot'
+        if (gp.held.shoot) setCurlAnalog(gp.move.x)
+        else if (ctl.curlAnalog !== 0) setCurlAnalog(0)
+        // tackle dugmesi dokunus: mudahale, basili: jockey; L1 basili iken: kayarak
+        if (gp.down.tackle) {
+          if (gp.l1) pending.current = 'slide'
+          else padE = performance.now()
+        }
+        if (gp.up.tackle && padE > 0) {
+          if (performance.now() - padE < JOCKEY_HOLD_MS) pending.current = 'tackle'
+          padE = 0
+        }
+        if (gp.down.switch && lk < 0) {
+          const n = nearestToBall(team, p.id)
+          if (n) setControlled(n.id)
+        }
       }
       if (gp.down.camera) toggleCam()
       if (gp.down.hints) {
@@ -298,10 +396,14 @@ export function MatchControl() {
       }
       padLook.x = gp.look.x
       padLook.y = gp.look.y
-    }
+    } else setShield(p.id, false)
 
     let mx = rx * ix + fx * iy
     let mz = rz * ix + fz * iy
+    if (forceMove) {
+      mx = forceMove[0]
+      mz = forceMove[1]
+    }
     const ml = Math.hypot(mx, mz)
     if (ml > 1) {
       mx /= ml
@@ -337,7 +439,7 @@ export function MatchControl() {
     inp.sprint = allowMove && sprint
     // jockey: E (ya da RB) basili tutuluyor
     const held = (t0: number) => t0 > 0 && performance.now() - t0 >= JOCKEY_HOLD_MS
-    ;inp.jockey = allowMove && !p.hasBall && (held(eDown) || held(padE))
+    ;inp.jockey = allowMove && !p.hasBall && (held(eDown) || held(padE) || padJockey)
 
     if (queuedShot >= 0 && (performance.now() - queuedAt > 5000 || (ph === 'play' && !allowAct))) queuedShot = -1
     // duran top: taker topa varmadan verilen vurus/pas hemen bosa gitmesin, varinca uygulansin
@@ -391,11 +493,28 @@ export function MatchControl() {
       if (b.y > 1.1 && Math.hypot(b.x - p.x, b.z - p.z) < 1.2) inp.action = { type: 'header', power: Math.min(1, c), aim }
       // Z + sut: asirtma (top kale cizgisinde, nisan noktasinin altina iner)
       else if (lobMod) inp.action = { type: 'lob', power: 0, aim: { x: gx, y: 0, z: aim.z }, spin: { x: 0, y: (-ctl.curl / CURL_STEPS) * CURL_W, z: 0 } }
-      else inp.action = { type: 'shoot', power: Math.min(1, c), aim, spin: { x: 0, y: (-ctl.curl / CURL_STEPS) * CURL_W, z: 0 } }
+      else {
+        // R1+sut: ozel falsolu sut (otomatik kivrim); aksi halde elle falso
+        const curlEff = padExtra.finesse ? finesseCurl(b.x, b.z, game.match.attackDir[team], aim.y, aim.z, V_MIN + (V_MAX - V_MIN) * Math.min(1, c)) : ctl.curl
+        inp.action = { type: 'shoot', power: Math.min(1, c), aim, spin: { x: 0, y: (-curlEff / CURL_STEPS) * CURL_W, z: 0 } }
+        padExtra = { power: 0, driven: false, through: false, finesse: false }
+      }
       ctl.lastKmh = Math.round((8 + 26 * Math.min(1, c)) * 3.6)
       bumpCtl()
     } else if (want === 'pass' || want === 'lob') {
-      inp.action = { type: want, power: 0, aim: passTarget(p, dx, dz), spin: { x: 0, y: (-ctl.curl / CURL_STEPS) * CURL_W, z: 0 } }
+      let paim = passTarget(p, dx, dz)
+      let ppow = 0
+      if (want === 'pass') {
+        if (padExtra.through) paim = throughTarget(p, dx, dz, ml > 0.2) ?? paim
+        if (padExtra.power > 0) ppow = padExtra.power
+        if (padExtra.driven) {
+          // sert pas: otomatik hizin 1.3 kati
+          const v = Math.min(V_MAX, passSpeed(Math.hypot(paim.x - b.x, paim.z - b.z)) * 1.3)
+          ppow = Math.max(ppow, (v - V_MIN) / (V_MAX - V_MIN))
+        }
+      }
+      padExtra = { power: 0, driven: false, through: false, finesse: false }
+      inp.action = { type: want, power: ppow, aim: paim, spin: { x: 0, y: (-ctl.curl / CURL_STEPS) * CURL_W, z: 0 } }
     } else {
       // mudahale: top yakinsa topa dogru
       const db = Math.hypot(b.x - p.x, b.z - p.z)

@@ -35,8 +35,43 @@ ok('ds4-raw: 0 = cross -> pass, 3 = square -> lob', f.held.pass && f.held.lob &&
 ok('ds4-raw: sag cubuk eksen 3,4 (y yukari +)', Math.abs(f.look.x) > 0.3 && f.look.y > 0.3, JSON.stringify(f.look))
 pads = [pad({ id: ds4, mapping: '', axes: [0, 0, -1, 0, 0, 1], buttons: mkBtns(14, { 2: 1 }) })]
 f = pollPad()
-ok('ds4-raw: 2 = triangle -> switch', f.held.switch)
+ok('ds4-raw: 2 = triangle -> through (FIFA)', f.held.through && !f.held.switch)
 ok('ds4-raw: R2 ekseni 5 (=1) -> sprint analog', f.held.sprint && f.analog.r2 > 0.9)
+
+// 2b) FIFA duzeni: baglama gore eylemler (ayni dugme iki eylem: topla / topsuz)
+const only = (f, ids) => ids.every((i) => f.held[i])
+pads = [pad({ id: ds4, mapping: '', axes: [0, 0, -1, 0, 0, -1], buttons: mkBtns(14, { 0: 1 }) })]
+f = pollPad()
+ok('FIFA: x = pas (topla) ve baski (topsuz) ayni dugme', only(f, ['pass', 'press']) && !f.held.shoot)
+pads = [pad({ id: ds4, mapping: '', axes: [0, 0, -1, 0, 0, -1], buttons: mkBtns(14, { 1: 1 }) })]
+f = pollPad()
+ok('FIFA: o = sut (topla) ve kayarak (topsuz)', only(f, ['shoot', 'slide']))
+pads = [pad({ id: ds4, mapping: '', axes: [0, 0, -1, 0, 0, -1], buttons: mkBtns(14, { 3: 1 }) })]
+f = pollPad()
+ok('FIFA: kare = aşırtma (topla) ve müdahale (topsuz)', only(f, ['lob', 'tackle']))
+pads = [pad({ id: ds4, mapping: '', axes: [0, 0, -1, 0, 0, -1], buttons: mkBtns(14, { 4: 1 }) })]
+f = pollPad()
+ok('FIFA: L1 = sert pas (topla) ve oyuncu degistir (topsuz)', only(f, ['driven', 'switch']) && f.l1)
+pads = [pad({ id: ds4, mapping: '', axes: [0, 0, -1, 0, 0, -1], buttons: mkBtns(14, { 5: 1 }) })]
+f = pollPad()
+ok('FIFA: R1 = falsolu sut modifiyeri (topla) ve takim baskisi (topsuz)', only(f, ['finesse', 'teamPress']))
+pads = [pad({ id: ds4, mapping: '', axes: [0, 0, -1, 0, 0, -1], buttons: mkBtns(14, { 6: 1 }) })]
+f = pollPad()
+ok('FIFA: L2 = koruma (topla) ve jockey (topsuz), hassas yurume yok', only(f, ['shield', 'jockey']) && !f.held.precise)
+pads = [pad({ id: ds4, mapping: '', axes: [0, 0, -1, 0, 0, -1], buttons: mkBtns(14, { 0: 1, 4: 1 }) })]
+f = pollPad()
+ok('FIFA: L1+x = sert pas kombinasyonu (driven + pass birlikte)', only(f, ['pass', 'driven']))
+pads = [pad({ id: ds4, mapping: '', axes: [0, 0, -1, 0, 0, -1], buttons: mkBtns(14, { 1: 1, 5: 1 }) })]
+f = pollPad()
+ok('FIFA: R1+o = falsolu sut kombinasyonu (finesse + shoot birlikte)', only(f, ['shoot', 'finesse']))
+// klasik on ayar
+cfg.setPreset('klasik')
+pads = [pad({ id: ds4, mapping: '', axes: [0, 0, -1, 0, 0, -1], buttons: mkBtns(14, { 2: 1, 5: 1, 6: 1 }) })]
+f = pollPad()
+ok('klasik: ucgen = degistir, R1 = mudahale, L2 = hassas; FIFA eylemleri yok', only(f, ['switch', 'tackle', 'precise']) && !f.held.through && !f.held.finesse && !f.held.shield)
+ok('klasik: setPreset atamalari sifirladi', cfg.getSettings().preset === 'klasik' && Object.keys(cfg.getSettings().bindings).length === 0)
+cfg.resetSettings()
+ok('varsayilan on ayar FIFA', cfg.getSettings().preset === 'fifa')
 
 // 3) olu bolge ve egri
 ok('olu bolge: 0.1 -> 0', stick(0.1, 0, 0.18, 'dogrusal')[0] === 0)
@@ -91,6 +126,30 @@ ok('dinlenmede -1 eksen sihirbazi kilitlemiyor (hala bekliyor)', l3 === null)
 pads = [pad({ id: ds4, mapping: '', axes: [0, 0, -1, 0, 0, 1], buttons: mkBtns(14) })]
 pollPad()
 ok('eksen 5 (R2 cekildi) yakalandi', l3 && l3.binding.t === 'a' && l3.binding.i === 5 && l3.binding.dir === 1, JSON.stringify(l3))
+cfg.resetSettings()
+
+// 5c) cakisma yalniz ayni baglamda: topsuz 'tackle'a atanan dugme topla 'pass' ile cakismaz
+cfg.resetSettings()
+let c1 = null
+cfg.startLearn('tackle', (r) => (c1 = r))
+pads = [pad({ id: odd, mapping: '', axes: [0, 0], buttons: mkBtns(8) })]
+pollPad()
+pads = [pad({ id: odd, mapping: '', axes: [0, 0], buttons: mkBtns(8, { 6: 1 }) })]
+pollPad()
+let c2 = null
+cfg.startLearn('pass', (r) => (c2 = r))
+pads = [pad({ id: odd, mapping: '', axes: [0, 0], buttons: mkBtns(8) })]
+pollPad()
+pads = [pad({ id: odd, mapping: '', axes: [0, 0], buttons: mkBtns(8, { 6: 1 }) })]
+pollPad()
+ok('ayni dugme topsuz ve topla baglamlarda cakisma uyarisi vermez', c1 && c2 && c2.conflicts.length === 0)
+let c3 = null
+cfg.startLearn('press', (r) => (c3 = r))
+pads = [pad({ id: odd, mapping: '', axes: [0, 0], buttons: mkBtns(8) })]
+pollPad()
+pads = [pad({ id: odd, mapping: '', axes: [0, 0], buttons: mkBtns(8, { 6: 1 }) })]
+pollPad()
+ok('ayni baglamda (topsuz) cakisma uyarisi verir', c3 && c3.conflicts.includes('tackle'))
 cfg.resetSettings()
 
 // 6) titresim

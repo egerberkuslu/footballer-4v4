@@ -882,9 +882,9 @@ function possession(gdt: number) {
 }
 
 /** rakip arkada mi (top koruma) */
-function shieldFrom(p: Player): Player | null {
+function shieldFrom(p: Player, maxD = 1.3): Player | null {
   let best: Player | null = null
-  let bd = 1.3
+  let bd = maxD
   for (const q of game.players) {
     if (q.team === p.team || q.sentOff) continue
     const d = Math.hypot(q.x - p.x, q.z - p.z)
@@ -896,6 +896,11 @@ function shieldFrom(p: Player): Player | null {
   return best
 }
 
+const shieldHeld: boolean[] = [] // insan koruma tusu (L2)
+/** insan top koruma tusu: acikken rakip 3 m icindeyse govde rakip ile top arasina girer */
+export function setShield(id: number, on: boolean) {
+  shieldHeld[id] = on
+}
 const dribPhase: number[] = []
 const escapeT: number[] = []
 const cutT: number[] = [] // son ani donus (kesme/geri cekme) ani
@@ -918,8 +923,9 @@ function dribble(p: Player, gdt: number) {
   const dist = Math.hypot(rx, rz)
 
   // top koruma: yavasken rakip yakindaysa sirtini don, topu uzak ayakta tut
-  if (locoTuning.shield && sp < 1.5 && m < 0.6 && game.match.phase === 'play') {
-    const opp = shieldFrom(p)
+  const forced = !!shieldHeld[p.id] // insan L2: kosulsuz koruma
+  if (forced || (locoTuning.shield && sp < 1.5 && m < 0.6 && game.match.phase === 'play')) {
+    const opp = shieldFrom(p, forced ? 3 : 1.3)
     if (opp) {
       let ax = p.x - opp.x
       let az = p.z - opp.z

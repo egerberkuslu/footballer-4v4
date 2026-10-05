@@ -9,7 +9,7 @@ import { getTimeOfDay, setTimeOfDay } from './env/timeOfDay'
 import { game } from './game/store'
 import { lockedPlayer } from './mp/role'
 import { world } from './sim'
-import { actionLabel, getPadInfo } from './control/gamepadConfig'
+import { actionLabel, getPadInfo, getSettings } from './control/gamepadConfig'
 
 const TYPE_NAMES = { normal: 'Normal', asirtma: 'Aşırtma', yerden: 'Yerden sert' } as const
 
@@ -112,12 +112,19 @@ const HELP_MAC: [string, string][] = [
   ['F3', 'Geliştirici paneli'],
 ]
 
-/** bagli kol icin dinamik yardim satiri (PS kolunda simgelerle) */
-function padHelp(): [string, string] {
+/** bagli kol icin dinamik, baglam duyarli yardim satirlari (PS kolunda simgelerle) */
+function padHelp(): [string, string][] {
   const L = actionLabel
+  const ad = getPadInfo().ps ? 'PlayStation' : 'Gamepad'
+  if (getSettings().preset === 'klasik') {
+    return [
+      [`Kol (${ad}, klasik)`, `Sol çubuk hareket, ${L('pass')} pas, ${L('shoot')} şut (basılıyken sol çubuk falso, sağ çubuk nişan), ${L('lob')} aşırtma, ${L('tackle')} müdahale / basılı jockey, L1+${L('tackle')} kayarak, ${L('switch')} oyuncu değiştir, ${L('sprint')} sprint, ${L('precise')} hassas yürüme`],
+    ]
+  }
   return [
-    'Kol (' + (getPadInfo().ps ? 'PlayStation' : 'Gamepad') + ')',
-    `Sol çubuk hareket, ${L('pass')} pas, ${L('shoot')} şut (basılıyken sol çubuk X falso, sağ çubuk nişan), ${L('lob')} aşırtma, ${L('tackle')} müdahale / basılı jockey, L1+${L('tackle')} kayarak, ${L('switch')} oyuncu değiştir, ${L('sprint')} sprint, ${L('precise')} hassas yürüme, ${L('camera')} kamera, ${L('hints')} pas halkaları, ${L('pause')} menü`,
+    [`Kol topla (${ad})`, `${L('pass')} pas (basılı: güç), ${L('shoot')} şut (basılı: şarj, sol çubuk falso), ${L('lob')} orta, ${L('through')} ara pas, ${L('driven')}+${L('pass')} sert pas, ${L('finesse')}+${L('shoot')} falsolu şut, ${L('shield')} top koruma, ${L('sprint')} sprint`],
+    [`Kol topsuz (${ad})`, `${L('tackle')} müdahale, ${L('slide')} kayarak, ${L('press')} baskı, ${L('jockey')} jockey, ${L('switch')} oyuncu değiştir, ${L('sprint')} sprint`],
+    ['Kol genel', `${L('camera')} kamera, ${L('hints')} pas halkaları, ${L('camPrev')}/${L('camNext')} kamera önayarı, ${L('pause')} menü`],
   ]
 }
 
@@ -322,7 +329,7 @@ export function Hud() {
           {(mac ? (['mac', 'antrenman'] as const) : (['antrenman', 'mac'] as const)).map((m) => (
             <div key={m} className={m === ctl.mode ? 'hgroup' : 'hgroup dim'}>
               <div className="title">{m === 'mac' ? 'Maç' : 'Antrenman'} kısayolları</div>
-              {[...(m === 'mac' ? HELP_MAC : HELP), ...(m === 'mac' && getPadInfo().connected ? [padHelp()] : [])].map(([k, v]) => (
+              {[...(m === 'mac' ? HELP_MAC : HELP), ...(m === 'mac' && getPadInfo().connected ? padHelp() : [])].map(([k, v]) => (
                 <div key={k} className="hr">
                   <kbd>{k}</kbd>
                   <span>{v}</span>

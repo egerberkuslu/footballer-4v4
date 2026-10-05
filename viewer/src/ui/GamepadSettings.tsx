@@ -12,8 +12,10 @@ import {
   onSettingsChange,
   resetSettings,
   rumble,
+  setPreset,
   setSettings,
   startLearn,
+  defaultOf,
   type ActionId,
   type GamepadSettings as Settings,
   type Logical,
@@ -101,6 +103,14 @@ const SHORT_TBL: Partial<Record<ActionId, string>> = {
   hints: 'Pas halkaları',
   camPrev: 'Önceki kamera',
   camNext: 'Sonraki kamera',
+  through: 'Ara pas',
+  driven: 'Sert pas',
+  finesse: 'Falsolu şut',
+  shield: 'Koruma',
+  slide: 'Kayarak',
+  press: 'Baskı',
+  jockey: 'Jockey',
+  teamPress: 'Takım baskısı',
 }
 const shortOf = (id: ActionId) => SHORT_TBL[id] ?? ACTIONS.find((a) => a.id === id)?.ad ?? id
 const SYM: Partial<Record<Logical, string>> = {
@@ -120,22 +130,27 @@ const SYM: Partial<Record<Logical, string>> = {
 function PadScheme({ s }: { s: Settings }) {
   // varsayilan eslemeden: ozel atamasi olmayan eylemin adi dugmenin yaninda
   const at = (l: Logical) => {
-    const a = ACTIONS.find((x) => x.varsayilan === l && !s.bindings[x.id])
-    return a ? shortOf(a.id) : ''
+    // ayni dugmedeki tum eylemler (topla / topsuz), ozel atamasi olmayanlar
+    const as = ACTIONS.filter((x) => defaultOf(x, s.preset) === l && !s.bindings[x.id])
+    return as.map((a) => shortOf(a.id))
   }
   const L = 'rgba(255,255,255,0.55)'
   // etiket: dugme simgesi + eylem adi; cizgi dolu
   const lab = (x: number, y: number, anchor: 'start' | 'end', l: Logical, tx: number, ty: number) =>
-    !at(l) ? null : (
+    !at(l).length ? null : (
       <g key={l}>
         <line x1={tx} y1={ty} x2={x + (anchor === 'start' ? -4 : 4)} y2={y - 4} stroke={L} strokeWidth="1" />
         <text x={x} y={y} textAnchor={anchor} className="gps-svg-act">
-          {at(l)}
+          {at(l).map((t, i) => (
+            <tspan key={t} x={x} dy={i ? 11 : 0}>
+              {t}
+            </tspan>
+          ))}
         </text>
       </g>
     )
   return (
-    <svg className="gps-scheme" viewBox="0 0 560 300" role="img" aria-label="PS düğme düzeni">
+    <svg className="gps-scheme" viewBox="-70 0 700 300" role="img" aria-label="PS düğme düzeni">
       {/* gövde */}
       <path
         d="M150 90 C120 90 96 112 82 168 C70 218 66 262 92 270 C118 278 136 240 160 212 C176 196 200 192 280 192 C360 192 384 196 400 212 C424 240 442 278 468 270 C494 262 490 218 478 168 C464 112 440 90 410 90 Z"
@@ -194,19 +209,19 @@ function PadScheme({ s }: { s: Settings }) {
       {lab(112, 36, 'end', 'l2', 150, 56)}
       {lab(448, 36, 'start', 'r2', 410, 56)}
       {lab(100, 100, 'end', 'l1', 134, 82)}
-      {lab(460, 100, 'start', 'r1', 426, 82)}
-      {lab(470, 118, 'start', 'triangle', 414, 118)}
-      {lab(500, 168, 'start', 'cross', 414, 168)}
-      {lab(310, 142, 'start', 'square', 374, 143)}
-      {lab(484, 143, 'start', 'circle', 440, 143)}
+      {lab(470, 92, 'start', 'r1', 426, 82)}
+      {lab(482, 124, 'start', 'triangle', 414, 118)}
+      {lab(496, 186, 'start', 'cross', 414, 168)}
+      {lab(330, 126, 'end', 'square', 374, 143)}
+      {lab(486, 150, 'start', 'circle', 440, 143)}
       <g>
         <line x1="247" y1="104" x2="247" y2="92" stroke={L} />
         <text x="247" y="88" textAnchor="middle" className="gps-svg-act">
-          {at('share')}
+          {at('share').join(' · ')}
         </text>
         <line x1="313" y1="104" x2="313" y2="92" stroke={L} />
         <text x="313" y="88" textAnchor="middle" className="gps-svg-act">
-          {at('options')}
+          {at('options').join(' · ')}
         </text>
         <line x1="142" y1="138" x2="108" y2="150" stroke={L} />
         {(
@@ -217,7 +232,7 @@ function PadScheme({ s }: { s: Settings }) {
           ] as [Logical, string][]
         ).map(([l, ar], i) => (
           <text key={l} x="104" y={150 + i * 16} textAnchor="end" className="gps-svg-act">
-            {at(l) ? ar + at(l) : ''}
+            {at(l).length ? ar + at(l).join(' · ') : ''}
           </text>
         ))}
         <line x1="222" y1="219" x2="222" y2="240" stroke={L} />
@@ -279,28 +294,42 @@ function Bindings({ s, pad }: { s: Settings; pad: PadInfo }) {
       if (r.conflicts.length) setWarn(`Bu giriş ayrıca şuna atanmış: ${r.conflicts.map((c) => shortOf(c)).join(', ')}`)
     })
   }
+  const row = (a: (typeof ACTIONS)[number]) => {
+    const custom = !!s.bindings[a.id]
+    const active = learn === a.id
+    return (
+      <div key={a.id} className={`gps-bind ${active ? 'learn' : ''}`}>
+        <span className="gps-bind-name" title={a.ad}>{shortOf(a.id)}</span>
+        <button className="gps-chip" disabled={!pad.connected} onClick={() => begin(a.id)} title={pad.connected ? 'Değiştirmek için tıkla' : 'Kol bağlı değil'}>
+          {active ? 'Bir tuşa bas…' : actionLabel(a.id)}
+        </button>
+        <button className="gps-x" disabled={!custom} onClick={() => clearBinding(a.id)} title="Varsayılana dön" aria-label="Varsayılana dön">
+          ↺
+        </button>
+      </div>
+    )
+  }
+  const col = (ctx: 'topla' | 'topsuz' | 'genel', title: string) => (
+    <div className="gps-col">
+      <div className="gps-col-t">{title}</div>
+      {ACTIONS.filter((a) => a.ctx === ctx).map(row)}
+    </div>
+  )
   return (
     <div className="gps-binds">
-      {ACTIONS.map((a) => {
-        const custom = !!s.bindings[a.id]
-        const active = learn === a.id
-        return (
-          <div key={a.id} className={`gps-bind ${active ? 'learn' : ''}`}>
-            <span className="gps-bind-name">{a.ad}</span>
-            <button
-              className="gps-chip"
-              disabled={!pad.connected}
-              onClick={() => begin(a.id)}
-              title={pad.connected ? 'Değiştirmek için tıkla' : 'Kol bağlı değil'}
-            >
-              {active ? 'Bir tuşa bas…' : actionLabel(a.id)}
-            </button>
-            <button className="gps-x" disabled={!custom} onClick={() => clearBinding(a.id)} title="Varsayılana dön" aria-label="Varsayılana dön">
-              ↺
-            </button>
-          </div>
-        )
-      })}
+      <div className="gps-presets" role="group" aria-label="Ön ayar">
+        <button className={s.preset === 'fifa' ? 'on' : ''} onClick={() => setPreset('fifa')}>
+          FIFA
+        </button>
+        <button className={s.preset === 'klasik' ? 'on' : ''} onClick={() => setPreset('klasik')}>
+          Klasik
+        </button>
+      </div>
+      <div className="gps-cols">
+        {col('topla', 'Topla')}
+        {col('topsuz', 'Topsuz')}
+      </div>
+      {col('genel', 'Genel')}
       {warn && <div className="gps-warn">{warn}</div>}
       {!pad.connected && <div className="gps-hint">Tuş atamak için kolu bağla ve bir tuşa bas.</div>}
     </div>
