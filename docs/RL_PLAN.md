@@ -139,3 +139,14 @@ Ege'nin isteği: bir sürümde 11'e 11, herkes kendi rolünde.
 - Hafta sonu bütçesi dolarsa tohum sayısını değil yöntem sayısını azalt (en az 5 tohum çekirdek karşılaştırmada korunur).
 - Sürekli kontrol noktası ve devam edebilme: bir makine çökerse koşu kaldığı yerden sürer.
 - Uzun koşular `claude-train` ile ayrı tmux oturumunda, wandb ile izlenir.
+
+## 12. Ölçek genelleme deneyi (H2) nasıl sağlam kurulur
+
+Hipotez H2: 4v4'te eğitilen GNN politikası eğitimsiz 5v5, 7v7 ve 11v11'e genellenir; sabit boyutlu MLP genellemez. Bu doğal ama otomatik doğru değildir: hakem "MLP'yi saman adam yaptınız" diyebilir. Önlemler:
+
+- **Adil karşılaştırma grubu (yalnız MLP değil):** (a) MLP, sabit en büyük N için sıfır doldurma ve maske ile (ölçek değişince çalışabilsin diye), (b) Deep Sets (permütasyon-değişmez, iletişimsiz), (c) Transformer/dikkat (tam bağlı, grafik yok), (d) önerilen GNN (yerel kenarlı mesaj geçişi). Böylece fark "grafik yapısı" mı "set girişi" mi ayrışır.
+- **Dağılım kayması kontrolü:** 11v11 sahası büyük (105×68 m) ve mesafeler eğitimde görülenden büyük. Gözlemler saha ölçeğine normalize edilir, komşu sayısı en yakın k ile sınırlanır, mesafeler kırpılır. İki koşul ayrı raporlanır: (i) eğitim sahasıyla aynı mutlak ölçek (oyuncular seyrek), (ii) orantılı büyütülmüş saha.
+- **Rol eksikliği:** 4v4'te kanat/stoper/orta saha rolü yok; 11v11'e geçerken rol gömmesi (role embedding) "bilinmeyen rol" ile verilir ya da rolsüz çalıştırılır. Rolsüz ve el yazması rol sezgisi ile ayrı ayrı sınanır.
+- **Negatif sonuç da sonuçtur:** GNN genellemezse bu raporlanır. Hipotez koşudan önce yazılı (ön kayıt), başarı ölçütü: 5v5/7v7'de el yazması tabana karşı kayıpsız kalma, ve GNN − en iyi karşılaştırma grubu farkı bootstrap güven aralığı sıfırı içermiyor.
+- **Önemsiz tavan/taban:** eğitimsiz rastgele politika ve el yazması konumlanma sezgiseli aynı ölçeklerde ölçülür (taban), 4v4'te eğitilen politika kendi ölçeğinde tavandır.
+- **Tek eksen:** yalnızca takım büyüklüğü değişir; fizik, oyuncu hızları, top ve kurallar aynı kalır (üç ölçekte de sabit simülasyon sürümü).
