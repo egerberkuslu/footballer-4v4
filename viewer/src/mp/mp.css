@@ -1,0 +1,610 @@
+/* Ana menu + cok oyunculu lobi (L). Tum siniflar mp- onekli; HUD cam paneliyle ayni dil. */
+.mp-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: radial-gradient(ellipse at 50% 40%, rgba(8, 14, 20, 0.35), rgba(6, 10, 14, 0.72));
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: #f4f6f8;
+  font-size: 13px;
+  user-select: none;
+  overflow: auto;
+}
+.mp-card {
+  background: rgba(14, 18, 22, 0.66);
+  backdrop-filter: blur(14px) saturate(1.25);
+  -webkit-backdrop-filter: blur(14px) saturate(1.25);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: min(100%, 440px);
+  animation: mp-in 0.25s ease-out;
+}
+@keyframes mp-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+}
+.mp-card button,
+.mp-menubtn,
+.mp-badge button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 8px 12px;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    transform 0.1s;
+}
+.mp-card button:hover:not(:disabled),
+.mp-menubtn:hover,
+.mp-badge button:hover {
+  background: rgba(255, 255, 255, 0.17);
+}
+.mp-card button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.mp-card button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.mp-card .mp-primary {
+  background: rgba(255, 255, 255, 0.92);
+  color: #111;
+  font-weight: 650;
+  border-color: transparent;
+}
+.mp-card .mp-primary:hover:not(:disabled) {
+  background: #fff;
+}
+.mp-card .mp-ok {
+  background: #2e8b4e;
+  border-color: rgba(140, 230, 170, 0.45);
+}
+.mp-card input {
+  font: inherit;
+  color: inherit;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  padding: 8px 10px;
+  outline: none;
+  min-width: 0;
+}
+.mp-card input:focus {
+  border-color: rgba(242, 194, 48, 0.7);
+}
+
+/* ana menu */
+.mp-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  justify-content: center;
+  padding: 4px 0 2px;
+}
+.mp-brand b {
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(#f2c230, #d4252c);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.mp-brand span {
+  font-size: 15px;
+  letter-spacing: 0.42em;
+  opacity: 0.8;
+}
+.mp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.mp-field span,
+.mp-lbl {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+.mp-modes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mp-modes button {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  grid-template-rows: auto auto;
+  text-align: left;
+  column-gap: 10px;
+  padding: 12px 14px;
+}
+.mp-modes button i {
+  grid-row: span 2;
+  align-self: center;
+  font-style: normal;
+  font-size: 20px;
+  text-align: center;
+  opacity: 0.85;
+}
+.mp-modes button b {
+  font-size: 14.5px;
+}
+.mp-modes button small {
+  opacity: 0.6;
+}
+.mp-modes button.hot {
+  border-color: rgba(242, 194, 48, 0.45);
+  background: linear-gradient(90deg, rgba(212, 37, 44, 0.28), rgba(242, 194, 48, 0.12));
+}
+
+/* cok oyunculu giris */
+.mp-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.mp-head > b {
+  font-size: 16px;
+}
+.mp-card .mp-back {
+  padding: 5px 9px;
+  background: transparent;
+}
+.mp-or {
+  text-align: center;
+  opacity: 0.5;
+  font-size: 11px;
+}
+.mp-coderow {
+  display: flex;
+  gap: 8px;
+}
+.mp-card .mp-code {
+  flex: 1;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+}
+.mp-info {
+  color: #cfe3ff;
+}
+.mp-err {
+  color: #ff9c9c;
+}
+.mp-warn {
+  color: #ffd27a;
+}
+.mp-foot {
+  font-size: 10.5px;
+  opacity: 0.45;
+}
+
+/* lobi */
+.mp-card.mp-lobby {
+  width: min(100%, 860px);
+}
+.mp-room {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.mp-room span {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  opacity: 0.6;
+}
+.mp-room b {
+  font-size: 22px;
+  letter-spacing: 0.22em;
+  font-variant-numeric: tabular-nums;
+}
+.mp-room button {
+  padding: 5px 9px;
+  font-size: 11.5px;
+}
+.mp-card .mp-x {
+  padding: 4px 9px;
+}
+.mp-body {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 720px) {
+  .mp-body {
+    grid-template-columns: 1fr;
+  }
+}
+.mp-teams {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.mp-team {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.mp-thead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 2px 4px;
+}
+.mp-thead i {
+  width: 6px;
+  height: 16px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.35);
+}
+.mp-team.t0 .mp-thead i {
+  background: linear-gradient(#d4252c 50%, #f2c230 50%);
+}
+.mp-team.t1 .mp-thead i {
+  background: linear-gradient(#1b2a5c 50%, #e9edf5 50%);
+}
+.mp-thead small {
+  opacity: 0.55;
+}
+.mp-thead button {
+  margin-left: auto;
+  padding: 3px 10px;
+  font-size: 11.5px;
+}
+.mp-member {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.18);
+}
+.mp-member.me {
+  outline: 1px solid rgba(242, 194, 48, 0.45);
+}
+.mp-member.off {
+  opacity: 0.5;
+}
+.mp-member em {
+  font-style: normal;
+  color: #f2c230;
+  margin-right: 4px;
+}
+.mp-mname {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mp-mname small {
+  opacity: 0.55;
+}
+.mp-ready {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+}
+.mp-ready.on {
+  background: #4fd67e;
+  border-color: #4fd67e;
+  box-shadow: 0 0 8px rgba(79, 214, 126, 0.6);
+}
+.mp-mod {
+  display: flex;
+  gap: 4px;
+}
+.mp-card .mp-mod button {
+  padding: 2px 7px;
+  font-size: 11px;
+}
+.mp-empty {
+  opacity: 0.4;
+  font-size: 11.5px;
+  padding: 4px 8px;
+}
+.mp-ping {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+.mp-ping i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #888;
+}
+.mp-ping.good i {
+  background: #4fd67e;
+}
+.mp-ping.mid i {
+  background: #f2c230;
+}
+.mp-ping.bad i {
+  background: #e5484d;
+}
+.mp-side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.mp-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.mp-set {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.mp-set > span {
+  opacity: 0.8;
+}
+.mp-seg {
+  display: flex;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+  padding: 2px;
+}
+.mp-card .mp-seg button {
+  border: none;
+  background: transparent;
+  padding: 4px 9px;
+  font-size: 11.5px;
+  border-radius: 6px;
+}
+.mp-card .mp-seg button.on {
+  background: rgba(255, 255, 255, 0.88);
+  color: #111;
+  font-weight: 600;
+}
+.mp-card .mp-seg button:disabled:not(.on) {
+  opacity: 0.35;
+}
+.mp-card .mp-seg button.on:disabled {
+  opacity: 0.85;
+}
+.mp-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+}
+.mp-count {
+  opacity: 0.6;
+  margin-right: auto;
+}
+
+/* sohbet */
+.mp-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+}
+.mp-msgs {
+  height: 150px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.22);
+  font-size: 12.5px;
+  user-select: text;
+}
+.mp-msgs b,
+.mp-feed b {
+  color: #f2c230;
+  font-weight: 600;
+  margin-right: 6px;
+}
+.mp-msgs .sys,
+.mp-feed .sys {
+  opacity: 0.55;
+  font-style: italic;
+}
+.mp-msgs .emo span {
+  font-size: 16px;
+}
+.mp-emotes {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+.mp-card .mp-emotes button {
+  padding: 3px 6px;
+  font-size: 16px;
+  line-height: 1.1;
+  background: transparent;
+  border-color: transparent;
+}
+
+/* mac ici */
+.mp-menubtn {
+  position: fixed;
+  right: 16px;
+  top: 58px;
+  z-index: 25;
+  background: rgba(14, 18, 22, 0.42);
+  backdrop-filter: blur(10px);
+  color: #f4f6f8;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  padding: 6px 11px;
+}
+.mp-badge {
+  position: fixed;
+  right: 16px;
+  top: 58px;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px 5px 10px;
+  border-radius: 9px;
+  background: rgba(14, 18, 22, 0.5);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f4f6f8;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  user-select: none;
+}
+.mp-badge b {
+  letter-spacing: 0.18em;
+}
+.mp-badge button {
+  padding: 3px 8px;
+  font-size: 11.5px;
+}
+.mp-role {
+  opacity: 0.7;
+}
+.mp-conn {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4fd67e;
+}
+.mp-conn.reconnecting,
+.mp-conn.connecting {
+  background: #f2c230;
+  animation: mp-blink 0.8s infinite alternate;
+}
+.mp-conn.lost {
+  background: #e5484d;
+}
+@keyframes mp-blink {
+  to {
+    opacity: 0.25;
+  }
+}
+.mp-banner {
+  position: fixed;
+  top: 92px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 26;
+  padding: 7px 14px;
+  border-radius: 8px;
+  background: rgba(120, 70, 0, 0.75);
+  color: #fff;
+  font: 600 12.5px 'Inter', system-ui, sans-serif;
+}
+.mp-feed {
+  position: fixed;
+  left: 14px;
+  bottom: 18px;
+  z-index: 24;
+  width: min(360px, calc(100vw - 28px));
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: #f4f6f8;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12.5px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+}
+.mp-feed > div {
+  animation: mp-in 0.2s ease-out;
+}
+.mp-hint {
+  opacity: 0.45;
+  font-size: 10.5px;
+}
+.mp-cin {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  text-shadow: none;
+}
+.mp-cin .mp-msgs {
+  height: 130px;
+  background: rgba(14, 18, 22, 0.6);
+  backdrop-filter: blur(8px);
+}
+.mp-cin input {
+  font: inherit;
+  color: inherit;
+  background: rgba(14, 18, 22, 0.75);
+  border: 1px solid rgba(242, 194, 48, 0.6);
+  border-radius: 8px;
+  padding: 7px 10px;
+  outline: none;
+}
+.mp-floats {
+  position: fixed;
+  left: 50%;
+  bottom: 160px;
+  z-index: 24;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 14px;
+  pointer-events: none;
+}
+.mp-float {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: mp-rise 2.6s ease-out forwards;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+.mp-float span {
+  font-size: 40px;
+}
+.mp-float small {
+  font-size: 11px;
+}
+@keyframes mp-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.6);
+  }
+  12% {
+    opacity: 1;
+    transform: translateY(0) scale(1.1);
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-60px) scale(1);
+  }
+}

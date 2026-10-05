@@ -1,0 +1,36 @@
+# bagimliliklar ve derleme ciktilari
+node_modules/
+viewer/dist/
+viewer/.vite/
+*.tsbuildinfo
+
+# buyuk ara dosyalar (yeniden uretilebilir: human/run_all.sh)
+human/dl/
+human/bake/
+human/wip/
+human/*.blend
+human/*.blend1
+*.blend1
+*.npz
+
+# test ciktilari
+viewer/shots/
+viewer/.playwright-mcp/
+viewer/test-results/
+qa/*.png
+
+# yerel
+.DS_Store
+*.tmp
+
+# kalite ajaninin goruntu/video ciktilari (raporlar .md kalir)
+viewer/qa/*
+!viewer/qa/*.md
+
+# yeniden uretilebilir ara dosyalar
+*.blend
+human/yedek_v2/
+human/tex/
+human/preview_*.png
+futbolcu_on.png
+futbolcu_arka.png

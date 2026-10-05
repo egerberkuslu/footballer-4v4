@@ -1,0 +1,34 @@
+# M → M2-yukleme devir notu (yükleme ekranı, ön ısıtma, geçiş perdesi)
+
+## Durum (çalışıyor, App'e bağlı)
+Dosyalar (hepsi M'nin, `viewer/src/ui/`):
+- `loadTracker.ts`: ilerleme kaydı. `THREE.DefaultLoadingManager.itemStart/itemEnd/itemError` sarılır (drei useProgress'in onStart/onProgress'ine dokunmaz). Adres kovaları: `model` (futbolcu.glb + blob:), `model-lod`, `kits`, `trees`, `files`. Diğer ajanlar için API: `trackStep(id, label, fn)`, `trackAsync`, `defineStep/setProgress/finishStep`. `sealFiles()` hiç başlamayan kovaları "gerek yok" diye kapatır.
+- `boot.ts`: bayraklar ve durum. `BOOT` = kullanıcıda açık; Playwright'ta (navigator.webdriver) yalnız `?boot=1`; sayfa >20 s açıkken (HMR) açılmaz. `WARM` = BOOT ve `?warm=0` değilse. `boot.phase`: load → warm → ready → play (play'den geri dönüş yok). `boot.stats`: Oyna'dan sonraki 20 s kare ölçümü (worst, over33, over50, worstAt, logicMax, worstP1Max, loadMs). `window.__boot`. Hata yakalama: window error/unhandledrejection + yüklenemeyen dosya → `boot.errors` (ekranda kırmızı satır).
+- `Warmup.tsx`: Canvas içinde `<Warmup />`. Akış: ilk kare → `scene` adımı biter; `waitIdle` (dosya bitti + 400 ms sessizlik + model geldiyse forma dokuları da başlamış olmalı, 8 s sonra vazgeçer, 30 s üst sınır); `uploadTextures` (`gl.initTexture`, 12 ms dilimli); `compileAll` (sahnenin ışıksız üst çocukları tek tek `compileAsync(child, camera, scene)`, sonra tam sahne; FX açıkken 4x4 HalfFloat RT'ye bağlanarak derler, çünkü program anahtarındaki çıkış renk uzayı RT'de Linear); `forceFrame` (scene.onBeforeRender'da tüm nesneler görünür + frustumCulled=false + shadowMap.needsUpdate, sonraki kare başında geri alınır; böylece gölge derinlik ve son işleme varyantları da derlenir). Yükleme süresince `world.timeScale=0` (Oyna'da 1'e döner, yalnız M sıfırladıysa). `rewarm(maxMs)` perde için. `run()` hatası → bootError + ready.
+- `curtain.ts`: `withCurtain(fn, label)`. Perde 0,2 s'de iner, fn, `rewarm` ile KESİN ÜST SINIR 2,5 s (`CURTAIN_MAX_MS`), sonra kalkar; iç içe ya da yükleme ekranı açıkken fn doğrudan çalışır.
+- `BootOverlay.tsx` + `boot.css`: tam ekran yükleme ekranı (CSS 3D eğik saha, çizgiler SVG 40x25, pus, bulut gölgesi, gün ışığı; yalnız transform/opacity animasyonu → ana iş parçacığı bloke iken de akar), cam kart, marka (L'nin menüsüyle aynı), ilerleme çubuğu + şu anki adım, adım listesi, dönen ipuçları, hazır olunca "Oyna" (Enter/Boşluk). Oyna `sfx.init()` çağırır (K'nın ses bağlamı). İlerleme 10 s kıpırdamazsa ya da hata varsa "Uzun sürdü, yine de oyna" / "Hataya rağmen oyna" düğmesi. Yükleme sırasında oyun tuşları capture'da yutulur (F3 hariç). z-index: ekran 60, perde 70 (menü 40).
+- Bağlantı (F yaptı): `App.tsx` `<Warmup />` Effects'ten önce, `<BootOverlay />` en sonda; `control/actions.ts` `switchMode(m)` = withCurtain(setMode). L-mp'ye playSolo/hostStart/maç girişini withCurtain ile sarma ricası gönderildi, YAPILDIĞI DOĞRULANMADI.
+- Betikler: `scripts/ui-boot.mjs` (aşama görüntüleri + Oyna + 20 s ölçüm; `--ff` Firefox, `--warm 0`, `--var` X/Esc ile VAR, `--curtain`, `--first` yalnız ilk görüntü), `scripts/ui-prof.mjs` (CDP Profiler, en uzun karelerin öz/kapsayıcı süresi; `--after-play`, `--total ms`).
+- tsc temiz (son kontrol bu değişikliklerden sonra yapıldı).
+
+## Açık sorunlar / sıradaki işler (öncelik sırasıyla)
+1. **Maç başı ~7 s donma teşhisi (K buldu, team-lead istedi).** Profil sonucu (SwiftShader, `?blades=8000&mode=mac&fx=0`, BOOT kapalı): ilk 30 s'deki en uzun kare 17,3 s @16 s: %57 `grassTileTexture` (src/grass/grassTexture.ts:185, `initGrassUniforms` → `GrassGround` useMemo, React commit içinde senkron), %28 `WebGLProgram.getUniforms/onFirstUse` (ilk kullanımda shader derleme), ~%2,5 env/textures.ts concrete/outerGround/gravel haritaları. Yani açılıştaki donma = çim doku üretimi + ilk shader. 'play' fazı ~34 s'de başladı; sonrasında 2,7/2,6/2,4/1,8 s'lik kareler var ama profil penceresi oraya yetişmedi. `--total 60000 --after-play` ile yeniden koşum boş döndü (fazlar yalnız [null], muhtemelen sayfa çok yavaş açıldı ya da __game henüz yoktu): tekrar koş, gerekirse bekleme süresini artır. Play sonrası kareler shader ise ön ısıtmada eksik malzeme var demektir (karakter aksiyon pozları, VAR, kumaş); değilse sahibine kanıtla yaz (G2: VAR, J2: AI, I2: karakter, N2: kumaş). D2'ye (çim artık D2'de) öneri: `grassTileTexture`'ı `trackStep` ile sarmak ve/veya önbellek/işçiye taşımak.
+2. **Perde süre sınırı**: kod eklendi (2,5 s) ama GERÇEK GPU ve SwiftShader'da DOĞRULANMADI. F'nin `shots/F-11.png` bulgusu (9 s perde) bu sınırdan önceydi. `compileAll` ışıksız çocukları sırayla derliyor; KHR_parallel_shader_compile yoksa her parça senkron, sınır ancak parça arasında devreye girer.
+3. **Ölçümler (team-lead istedi, YAPILMADI)**: gerçek GPU'da ve Firefox'ta açılıştan "Oyna"ya süre (`boot.stats.loadMs`), Antrenman↔Maç perde süresi, ön ısıtmalı/ısıtmasız ilk 20 s en uzun kare. Komutlar aşağıda. SwiftShader'da loadMs 35–78 s ölçüldü (anlamsız fps, sadece akış testi). Gerçek GPU için README'deki `shots/gshotC.mjs` / `scripts/.d-shot.mjs` (GPU=1) desenini `ui-boot.mjs`'e taşı.
+4. **Ekran görüntüsü doğrulaması**: son tasarım `shots/M-3-0.png` (yükleme aşaması) iyi; hazır/Oyna hali `shots/M-1-hazir.png` (eski büyük saha). Oyna'ya tıklama Playwright'ta başarısızdı çünkü test kabuğu (artık silindi) ikinci bir BootOverlay basıyordu; App bağlandıktan sonra tıklama + perde (`--curtain`) testi YENİDEN KOŞULMADI. "Yine de oyna" ve hata satırı görüntüsü alınmadı.
+5. `futbolcu_lod1.glb` henüz kimse kullanmıyor; M `useGLTF.preload` ile önbelleğe alıyor (I2 kullanırsa anında hazır).
+6. Adım detayları: kit kovası StrictMode/çift istekte sayıları tutarsızdı (5/10); adrese göre kova bulmaya geçildi, düzeldiği DOĞRULANMADI.
+
+## Tuzaklar
+- Başsız tarayıcı kilidi meşgulken `timeout 400 run-browser.sh ...` sessizce ölür; bekleyen uzun koşumları `run_in_background` ile başlat.
+- compile(child, camera, scene): child ışık içeriyorsa ışık iki kez sayılır → yanlış program anahtarı. Bu yüzden ışıklı parçalar sondaki tam sahne turunda.
+- Son işleme (FX) açıkken sahne RT'ye çizilir; RT'siz derlemek farklı program üretir (boşa derleme).
+- Pozitif useFrame önceliği yasak: zorla görünürlük bu yüzden `scene.onBeforeRender` ile (öncelik-0 işleri sonrası, kırpma/gölge öncesi).
+- CSS 3D düzlem tıklamayı kesiyordu: `.boot-field` pointer-events:none + kart z-index 2.
+
+## Test komutları (viewer/ içinde)
+- `npx tsc -b`
+- `scripts/run-browser.sh node scripts/ui-boot.mjs shots/M2-a --q "mode=mac" --curtain` (Chromium, aşama PNG'leri + OLCUM satırı)
+- `... --warm 0` ile ısıtmasız karşılaştırma; `--var` VAR tetikler; `--ff` Firefox.
+- `scripts/run-browser.sh node scripts/ui-prof.mjs --total 60000 --after-play > shots/M-prof-play.txt`
+- `scripts/run-browser.sh node scripts/diag-ff.mjs` (Firefox canlılık; BOOT webdriver'da kapalı, etkilemez)

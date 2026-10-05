@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Futbolcu</title>
+    <style>
+      /* acilis perdesi (M2): modul yuklenirken ve ilk agir karede beyaz/donuk sayfa gorunmesin.
+         Yalniz transform/opacity animasyonu: ana is parcacigi bloke iken de akar. */
+      html,body{margin:0;background:#2c6a32}
+      #splash{position:fixed;inset:0;z-index:100;display:none;flex-direction:column;align-items:center;justify-content:center;gap:22px;
+        background:linear-gradient(#5f9bc8 0%,#a7cbe0 22%,#d9e6e2 31%,#7fa776 36%,#3f7a3c 46%,#2c6a32 100%);
+        font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif;color:#f4f6f8}
+      html[data-splash] #splash{display:flex}
+      #splash .brand{font-size:46px;font-weight:800;letter-spacing:-.5px;color:#ee7b30;text-shadow:0 2px 14px rgba(0,0,0,.35)}
+      #splash .brand span{margin-left:12px;font-size:15px;font-weight:600;letter-spacing:6px;color:#f4f6f8}
+      #splash .bar{width:260px;height:5px;border-radius:3px;background:rgba(0,0,0,.28);overflow:hidden}
+      #splash .bar i{display:block;width:40%;height:100%;border-radius:3px;background:linear-gradient(90deg,#ffe58a,#f0a52a);animation:sp-run 1.3s ease-in-out infinite}
+      @keyframes sp-run{from{transform:translateX(-110%)}to{transform:translateX(270%)}}
+    </style>
+    <script>
+      // otomasyonda (webdriver) yalniz ?boot=1 ile; ?boot=0 ile hic
+      (function(){
+        var q=location.search,on=/[?&]boot=1/.test(q)||(!/[?&]boot=0/.test(q)&&!navigator.webdriver);
+        if(on)document.documentElement.setAttribute('data-splash','1');
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="splash"><div class="brand">4'e 4<span>FUTBOL</span></div><div class="bar"><i></i></div></div>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,11 @@
+// E: verilen URL'nin başsız ekran görüntüsü (viewer'ın playwright'ını kullanır)
+import { createRequire } from 'module'
+const require = createRequire('/home/ege/Blender-MCP/footballer/viewer/package.json')
+const { chromium } = require('playwright')
+const [url, out, wait = '8000'] = process.argv.slice(2)
+const browser = await chromium.launch({ executablePath: process.env.CHROME_BIN || '/home/ege/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell', args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] })
+const page = await browser.newPage({ viewport: { width: 1280, height: 800 } })
+await page.goto(url, { timeout: 180000 })
+await page.waitForTimeout(Number(wait))
+await page.screenshot({ path: out })
+await browser.close()

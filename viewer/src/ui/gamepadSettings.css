@@ -1,0 +1,292 @@
+/* Kol Ayarlari (M2). Menu cam diliyle ayni dil: koyu cam, yesil vurgu. z-index: menu 40 < ayar 45 < yukleme 60 */
+.gps-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: radial-gradient(ellipse at 50% 40%, rgba(8, 14, 20, 0.5), rgba(6, 10, 14, 0.82));
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: #f4f6f8;
+  font-size: 13px;
+  user-select: none;
+  overflow: auto;
+}
+.gps-card {
+  --acc: #2f9e44;
+  background: rgba(14, 18, 22, 0.78);
+  backdrop-filter: blur(14px) saturate(1.25);
+  -webkit-backdrop-filter: blur(14px) saturate(1.25);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.5);
+  padding: 20px 22px;
+  width: min(100%, 860px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: gps-in 0.22s ease-out;
+}
+@keyframes gps-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+}
+.gps-card h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+.gps-card h3 {
+  margin: 10px 0 2px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: rgba(244, 246, 248, 0.55);
+}
+.gps-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.gps-card button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 7px 12px;
+  transition: background 0.15s, border-color 0.15s;
+}
+.gps-card button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.17);
+}
+.gps-card button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.gps-close {
+  padding: 4px 10px !important;
+}
+
+/* kol durumu */
+.gps-pad {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.gps-pad > i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #8a929a;
+}
+.gps-pad.on > i {
+  background: #3ddc6a;
+  box-shadow: 0 0 8px #3ddc6a;
+}
+.gps-pad-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gps-pad small {
+  color: #f0b45a;
+}
+.gps-badge {
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  background: rgba(255, 255, 255, 0.14);
+}
+.gps-badge.ps4,
+.gps-badge.ps5 {
+  background: #1f5fd1;
+}
+.gps-badge.xbox {
+  background: #2f9e44;
+}
+
+.gps-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 28px;
+}
+@media (max-width: 720px) {
+  .gps-cols {
+    grid-template-columns: 1fr;
+  }
+}
+.gps-cols section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* satirlar */
+.gps-row {
+  display: grid;
+  grid-template-columns: 138px 1fr 46px;
+  align-items: center;
+  gap: 10px;
+}
+.gps-lab {
+  color: rgba(244, 246, 248, 0.82);
+}
+.gps-row output {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: rgba(244, 246, 248, 0.7);
+}
+.gps-row input[type='range'] {
+  width: 100%;
+  accent-color: var(--acc);
+}
+.gps-seg {
+  grid-column: 2 / 4;
+  display: flex;
+  gap: 4px;
+}
+.gps-seg button {
+  flex: 1;
+}
+.gps-seg button.on {
+  background: var(--acc);
+  border-color: var(--acc);
+}
+.gps-toggle {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+}
+.gps-toggle i {
+  position: relative;
+  flex: none;
+  width: 32px;
+  height: 18px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.2);
+  transition: background 0.15s;
+}
+.gps-toggle i::after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s;
+}
+.gps-toggle.on i {
+  background: var(--acc);
+}
+.gps-toggle.on i::after {
+  transform: translateX(14px);
+}
+.gps-test {
+  align-self: flex-start;
+}
+
+/* tus atama */
+.gps-binds {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.gps-bind {
+  display: grid;
+  grid-template-columns: 1fr 112px 30px;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 6px;
+  border-radius: 8px;
+}
+.gps-bind.learn {
+  background: rgba(47, 158, 68, 0.16);
+}
+.gps-bind-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gps-chip {
+  font-weight: 600;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.gps-bind.learn .gps-chip {
+  border-color: var(--acc);
+  animation: gps-pulse 1s ease-in-out infinite;
+}
+@keyframes gps-pulse {
+  50% {
+    background: rgba(47, 158, 68, 0.45);
+  }
+}
+.gps-x {
+  padding: 5px 0 !important;
+}
+.gps-warn {
+  margin-top: 4px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  color: #ffd9a0;
+  background: rgba(240, 180, 90, 0.14);
+  border: 1px solid rgba(240, 180, 90, 0.35);
+}
+.gps-hint {
+  margin-top: 4px;
+  color: rgba(244, 246, 248, 0.55);
+}
+
+/* sema */
+.gps-scheme {
+  width: 100%;
+  max-height: 230px;
+}
+.gps-key {
+  fill: rgba(255, 255, 255, 0.1);
+  stroke: rgba(255, 255, 255, 0.55);
+  stroke-width: 1.2;
+}
+.gps-svg-sym {
+  fill: #f4f6f8;
+  font: 600 12px Inter, system-ui, sans-serif;
+}
+.gps-svg-sym.s {
+  font-size: 9px;
+}
+.gps-svg-act {
+  fill: #9bdba9;
+  font: 600 12px Inter, system-ui, sans-serif;
+}
+
+.gps-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.gps-card .gps-done {
+  background: var(--acc);
+  border-color: var(--acc);
+  padding: 7px 26px;
+  font-weight: 600;
+}
+.gps-card .gps-done:hover {
+  background: #37b24d;
+}

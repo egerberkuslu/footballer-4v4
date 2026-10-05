@@ -1,0 +1,257 @@
+/* Mac HUD'u (K). Tum siniflar rh- onekli; tiklamalar sahneye gecer (ses dugmesi haric). */
+.rh {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  color: #f4f6f8;
+  z-index: 20;
+}
+.rh-board {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: stretch;
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(12, 16, 22, 0.78);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  font-size: 15px;
+  letter-spacing: 0.06em;
+}
+.rh-team {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  font-weight: 700;
+}
+.rh-team i {
+  width: 6px;
+  height: 18px;
+  border-radius: 2px;
+}
+.rh-team.t0 i {
+  background: linear-gradient(#d4252c 50%, #f2c230 50%);
+}
+.rh-team.t1 i {
+  background: #1d2f6f;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+.rh-score {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #10141a;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+.rh-score em {
+  font-style: normal;
+  opacity: 0.45;
+}
+.rh-clock {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.35);
+  font-variant-numeric: tabular-nums;
+  white-space: pre;
+  min-width: 92px;
+}
+.rh-phase {
+  position: absolute;
+  top: 54px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.85;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+.rh-adv {
+  position: absolute;
+  top: 54px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 14px 6px;
+  border-radius: 4px;
+  background: rgba(30, 140, 70, 0.85);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.rh-adv span {
+  display: block;
+  height: 2px;
+  margin-top: 3px;
+  background: #fff;
+  transform-origin: left;
+  transform: scaleX(var(--k, 1));
+}
+.rh-banner {
+  position: absolute;
+  top: 26%;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  padding: 10px 28px 12px;
+  border-radius: 6px;
+  background: rgba(12, 16, 22, 0.72);
+  animation: rh-in 0.28s ease-out;
+  border-bottom: 3px solid #fff;
+}
+.rh-banner .t {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.rh-banner .s {
+  font-size: 15px;
+  margin-top: 2px;
+  opacity: 0.85;
+}
+.rh-banner.goal {
+  border-color: #f2c230;
+}
+.rh-banner.goal .t {
+  font-size: 40px;
+}
+.rh-banner.foul {
+  border-color: #e0e0e0;
+}
+.rh-banner.card-yellow {
+  border-color: #f5d000;
+}
+.rh-banner.card-yellow .t::before,
+.rh-banner.card-red .t::before {
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 22px;
+  margin-right: 12px;
+  vertical-align: -2px;
+  border-radius: 2px;
+  background: #f5d000;
+}
+.rh-banner.card-red {
+  border-color: #e0242c;
+}
+.rh-banner.card-red .t::before {
+  background: #e0242c;
+}
+.rh-banner.adv {
+  border-color: #2fae5c;
+}
+.rh-banner.var {
+  border-color: #48a6ff;
+}
+@keyframes rh-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px) scale(0.96);
+  }
+}
+.rh-sound {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: rgba(12, 16, 22, 0.6);
+  pointer-events: auto;
+}
+.rh-sound button {
+  all: unset;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+.rh-sound button.off {
+  opacity: 0.6;
+}
+.rh-sound input {
+  width: 80px;
+  accent-color: #f2c230;
+}
+.rh-hint {
+  position: absolute;
+  bottom: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 5px;
+  background: rgba(12, 16, 22, 0.72);
+  border-left: 3px solid #f2c230;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.rh-count {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 96px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.55);
+  opacity: 0;
+}
+.rh-count.beat {
+  animation: rh-beat 1s ease-out;
+}
+.rh-count.last {
+  color: #ff5a4f;
+}
+@keyframes rh-beat {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.5);
+  }
+  18% {
+    opacity: 0.95;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  80% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.92);
+  }
+}
+
+/* cezali (kirmizi kart) oyuncular: tabelanin altinda, kalan sure */
+.rh-susp {
+  position: absolute;
+  top: 58px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  pointer-events: none;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.rh-susp span {
+  padding: 3px 9px;
+  border-radius: 6px;
+  color: #fff;
+  background: rgba(20, 20, 24, 0.72);
+  border-left: 3px solid #ff3b30;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}

@@ -1,0 +1,266 @@
+/* Sut HUD'u: alt orta guc/falso/tur, ortada olay yazisi, sag altta yardim */
+.shot-hud {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 14px 9px;
+  min-width: 340px;
+  color: #f4f6f8;
+  font-size: 12px;
+  user-select: none;
+  pointer-events: none;
+  background: rgba(14, 18, 22, 0.42);
+  backdrop-filter: blur(10px) saturate(1.2);
+  -webkit-backdrop-filter: blur(10px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  font-variant-numeric: tabular-nums;
+}
+
+.shot-hud .types {
+  display: flex;
+  gap: 4px;
+}
+.shot-hud .types span {
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.07);
+  opacity: 0.6;
+  font-size: 11.5px;
+  transition: all 0.12s;
+}
+.shot-hud .types span.on {
+  opacity: 1;
+  background: #2e8b4e;
+  box-shadow: 0 0 0 1px rgba(140, 230, 170, 0.45);
+}
+
+.shot-hud .power {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.shot-hud .track {
+  position: relative;
+  width: 280px;
+  height: 10px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+.shot-hud .track .red {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(239, 68, 68, 0.28);
+}
+.shot-hud .track .fill {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  transform: scaleX(0);
+  background: linear-gradient(90deg, #6ee7a8, #facc15 70%, #fb923c);
+}
+.shot-hud .track .fill.over {
+  background: linear-gradient(90deg, #6ee7a8, #facc15 60%, #ef4444);
+}
+.shot-hud .track .fill.shake {
+  animation: shot-shake 0.09s linear infinite;
+}
+@keyframes shot-shake {
+  50% {
+    filter: brightness(1.5);
+  }
+}
+.shot-hud .pv {
+  width: 64px;
+  font-weight: 600;
+}
+
+.shot-hud .curl {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.shot-hud .curl .k {
+  font-size: 10px;
+  opacity: 0.6;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 3px;
+  padding: 0 4px;
+}
+.shot-hud .cells {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+.shot-hud .cells i {
+  width: 16px;
+  height: 7px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.14);
+}
+.shot-hud .cells i.on {
+  background: #60a5fa;
+}
+.shot-hud .cells i.mid {
+  width: 2px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.5);
+}
+.shot-hud .cv {
+  width: 92px;
+  opacity: 0.85;
+}
+.shot-hud .last {
+  opacity: 0.75;
+  font-size: 11.5px;
+}
+.shot-hud .last b {
+  font-size: 14px;
+  opacity: 1;
+}
+
+/* olay yazisi: kisa buyuyup sonen */
+.shot-msg {
+  position: fixed;
+  left: 50%;
+  top: 30%;
+  transform: translate(-50%, -50%);
+  font: 800 76px/1 'Inter', system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  color: #fff;
+  pointer-events: none;
+  user-select: none;
+  text-shadow:
+    0 4px 22px rgba(0, 0, 0, 0.45),
+    0 0 2px rgba(0, 0, 0, 0.6);
+  animation: shot-pop 1.8s cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards;
+}
+.shot-msg.goal {
+  color: #fef08a;
+}
+.shot-msg.post {
+  color: #fdba74;
+  font-size: 60px;
+}
+.shot-msg.out {
+  color: #e5e7eb;
+  font-size: 54px;
+}
+@keyframes shot-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  14% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+  24% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -62%) scale(1);
+  }
+}
+
+.help-btn {
+  position: fixed;
+  right: 14px;
+  bottom: 18px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(14, 18, 22, 0.5);
+  color: #f4f6f8;
+  font: 600 15px/1 'Inter', system-ui, sans-serif;
+  cursor: pointer;
+}
+.help-panel {
+  position: fixed;
+  right: 14px;
+  bottom: 56px;
+  padding: 9px 12px;
+  color: #f4f6f8;
+  font-size: 12px;
+  background: rgba(14, 18, 22, 0.62);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.help-panel .title {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.6;
+  margin-bottom: 3px;
+}
+.help-panel .hr {
+  display: flex;
+  gap: 10px;
+}
+.help-panel kbd {
+  min-width: 108px;
+  font: 600 11px/1.6 ui-monospace, monospace;
+  opacity: 0.85;
+}
+
+.hud .row.mode button {
+  padding: 5px 12px;
+}
+.shot-hud .track.stamina .fill {
+  background: linear-gradient(90deg, #f87171, #facc15 35%, #4ade80 70%);
+}
+.help-panel {
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+}
+.help-panel .hgroup {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.help-panel .hgroup.dim {
+  opacity: 0.5;
+  margin-top: 8px;
+}
+
+/* macta girdi kilidi ipucu: guc barinin ustunde */
+.match-hint {
+  position: fixed;
+  left: 50%;
+  bottom: 118px;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: rgba(14, 18, 22, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #fef3c7;
+  font-size: 13px;
+  font-weight: 600;
+  pointer-events: none;
+  user-select: none;
+  animation: hint-pulse 1.6s ease-in-out infinite;
+}
+@keyframes hint-pulse {
+  50% {
+    opacity: 0.65;
+  }
+}
