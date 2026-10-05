@@ -631,5 +631,7 @@
   outline-offset: 2px;
 }
 .mp-overlay {
-  background: linear-gradient(100deg, rgba(5, 9, 12, 0.94), rgba(5, 9, 12, 0.6));
+  background: rgba(5, 9, 12, 0.99);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }

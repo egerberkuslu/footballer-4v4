@@ -6,7 +6,9 @@
   display: grid;
   place-items: center;
   padding: 16px;
-  background: radial-gradient(ellipse at 50% 40%, rgba(8, 14, 20, 0.6), rgba(6, 10, 14, 0.9));
+  background: rgba(5, 9, 12, 0.99);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   color: #f4f6f8;
   font-size: 13px;
@@ -404,9 +406,15 @@
   color: #f6b722;
 }
 .gps-seg button.on,
-.gps-card .gps-done,
-.gps-card button.on {
+.gps-card .gps-done {
   color: #1b1405;
+}
+.gps-presets button.on {
+  background: rgba(246, 183, 34, 0.22);
+  color: #f4f6f8;
+}
+.gps-toggle.on {
+  color: #f4f6f8;
 }
 .gps-card .gps-done:hover {
   background: #ffc93a;

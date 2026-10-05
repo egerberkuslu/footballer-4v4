@@ -13,9 +13,12 @@
   color: var(--txt);
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   user-select: none;
+  /* oyun ici arayuz (HUD) ve sahne arkada okunmaz: koyu, bulanik, neredeyse opak */
   background:
-    linear-gradient(180deg, rgba(5, 9, 12, 0.92) 0, rgba(5, 9, 12, 0.35) 18%, rgba(5, 9, 12, 0.35) 78%, rgba(5, 9, 12, 0.94) 100%),
-    linear-gradient(100deg, rgba(5, 9, 12, 0.94) 0%, rgba(5, 9, 12, 0.84) 36%, rgba(5, 9, 12, 0.5) 72%, rgba(5, 9, 12, 0.7) 100%);
+    radial-gradient(ellipse at 78% 45%, rgba(40, 52, 44, 0.55), transparent 62%),
+    linear-gradient(100deg, rgba(5, 9, 12, 0.995) 0%, rgba(6, 11, 14, 0.985) 100%);
+  backdrop-filter: blur(18px) saturate(0.8);
+  -webkit-backdrop-filter: blur(18px) saturate(0.8);
   animation: mm-fade 0.3s ease-out;
 }
 @keyframes mm-fade {
