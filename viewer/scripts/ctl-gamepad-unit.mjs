@@ -5,7 +5,7 @@ const store = new Map()
 globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)) }
 let pads = []
 globalThis.navigator = { getGamepads: () => pads }
-const { pollPad, stick, padCache } = await import('../src/control/gamepad.ts')
+const { pollPad, stick, padCache, startDirTest, getDirTest, padLive } = await import('../src/control/gamepad.ts')
 padCache.on = false
 const cfg = await import('../src/control/gamepadConfig.ts')
 
@@ -72,6 +72,46 @@ ok('klasik: ucgen = degistir, R1 = mudahale, L2 = hassas; FIFA eylemleri yok', o
 ok('klasik: setPreset atamalari sifirladi', cfg.getSettings().preset === 'klasik' && Object.keys(cfg.getSettings().bindings).length === 0)
 cfg.resetSettings()
 ok('varsayilan on ayar FIFA', cfg.getSettings().preset === 'fifa')
+
+// 2c) dikey eksenler: yukari itince ham Y negatif => hareket y POZITIF (ileri), kamera y pozitif
+pads = [pad({ id: 'Xbox', mapping: 'standard', axes: [0, -1, 0, -1], buttons: mkBtns(17) })]
+f = pollPad()
+ok('sol cubuk YUKARI (ham -1) => move.y > 0 (ileri)', f.move.y > 0.9 && f.nav.up && !f.nav.down, JSON.stringify(f.move))
+ok('sag cubuk YUKARI (ham -1) => look.y > 0', f.look.y > 0.9)
+pads = [pad({ id: 'Xbox', mapping: 'standard', axes: [0, 1, 0, 1], buttons: mkBtns(17) })]
+f = pollPad()
+ok('sol cubuk ASAGI => move.y < 0 (geri)', f.move.y < -0.9 && f.nav.down)
+cfg.setSettings({ invertL: true, invertY: true })
+f = pollPad()
+ok('invertL/invertY ters cevirir', f.move.y > 0.9 && f.look.y > 0.9)
+cfg.resetSettings()
+// yon testi: aygit tersse (yukari itince ham +1) test sonrasi dogru yon
+pads = [pad({ id: 'Generic', mapping: '', axes: [0, 0, 0, 0, 0, 0, 0, 0], buttons: mkBtns(8) })]
+pollPad()
+startDirTest()
+pollPad() // taban + silahlanma
+pads = [pad({ id: 'Generic', mapping: '', axes: [0, 1, 0, 0, 0, 0, 0, 0], buttons: mkBtns(8) })] // yukari itildi, ham +1 (ters)
+pollPad()
+ok('yon testi sol: ters aygit algilandi (invertL)', cfg.getSettings().invertL === true && getDirTest().step === 'right', JSON.stringify(getDirTest()))
+pads = [pad({ id: 'Generic', mapping: '', axes: [0, 0, 0, 0, 0, 0, 0, 0], buttons: mkBtns(8) })]
+pollPad()
+pads = [pad({ id: 'Generic', mapping: '', axes: [0, 0, 0, 0, 0, 0, 0, 0], buttons: mkBtns(8) })]
+pollPad()
+pads = [pad({ id: 'Generic', mapping: '', axes: [0, 0, 0, 0, -1, 0, 0, 0], buttons: mkBtns(8) })]
+pollPad()
+ok('yon testi sag: duz aygit (invertY degismedi)', cfg.getSettings().invertY === false && getDirTest().step === 'dpad', JSON.stringify(getDirTest()))
+// d-pad: yukari basinca eksen 7 = +1 (ters)
+pads = [pad({ id: 'Generic', mapping: '', axes: [0, 0, 0, 0, 0, 0, 0, 0], buttons: mkBtns(8) })]
+pollPad()
+pollPad()
+pads = [pad({ id: 'Generic', mapping: '', axes: [0, 0, 0, 0, 0, 0, 0, 1], buttons: mkBtns(8) })]
+pollPad()
+ok('yon testi d-pad: ters => dpadInvert, test bitti', cfg.getSettings().dpadInvert === true && getDirTest().done && cfg.getSettings().dirTested)
+// test sonrasi: ters aygitta YUKARI itince oyun ileri
+pads = [pad({ id: 'Generic', mapping: '', axes: [0, 1, 0, 0, 0, 0, 0, 0], buttons: mkBtns(8) })]
+f = pollPad()
+ok('test sonrasi: ters aygitta yukari => ileri (move.y>0)', f.move.y > 0.9 && f.nav.up)
+cfg.resetSettings()
 
 // 3) olu bolge ve egri
 ok('olu bolge: 0.1 -> 0', stick(0.1, 0, 0.18, 'dogrusal')[0] === 0)

@@ -2,7 +2,7 @@
 .gps-overlay {
   position: fixed;
   inset: 0;
-  z-index: 45;
+  z-index: 55;
   display: grid;
   place-items: center;
   padding: 16px;
@@ -329,4 +329,90 @@
 .gps-cols .gps-bind {
   grid-template-columns: 1fr 76px 26px;
   gap: 6px;
+}
+
+/* yon testi */
+.gps-dir {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.gps-sticks {
+  display: flex;
+  gap: 18px;
+}
+.gps-stick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 84px;
+}
+.gps-stick-box {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.05);
+  display: grid;
+  place-items: center;
+}
+.gps-stick-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--acc, #2f9e44);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
+}
+.gps-stick-dir {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  min-height: 1.2em;
+}
+.gps-dir-msg.run {
+  font-weight: 700;
+  color: var(--acc, #2f9e44);
+}
+
+/* kol ile gezinme: guclu, tutarli odak halkasi */
+[data-pad-focus],
+:is(button, [role='button'], input, select, a, [tabindex]):focus-visible {
+  outline: 3px solid #ffd23c !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px rgba(255, 210, 60, 0.28);
+  border-radius: 8px;
+}
+
+/* ---------- menu temasina uyum (M2): sari vurgu, agir italik basliklar ---------- */
+.gps-card {
+  --acc: #f6b722;
+  --head: 'Bahnschrift', 'Impact', 'Ubuntu Sans', 'DejaVu Sans Condensed', 'Arial Black', system-ui, sans-serif;
+  background: rgba(8, 12, 16, 0.97);
+  border: 0;
+  border-left: 4px solid #ee7b30;
+  border-radius: 6px;
+}
+.gps-card h2 {
+  font: italic 900 30px/1 var(--head);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.gps-card h3 {
+  font: italic 800 13px/1 var(--head);
+  letter-spacing: 3px;
+  color: #f6b722;
+}
+.gps-seg button.on,
+.gps-card .gps-done,
+.gps-card button.on {
+  color: #1b1405;
+}
+.gps-card .gps-done:hover {
+  background: #ffc93a;
+}
+.gps-card button:focus-visible,
+.gps-card input:focus-visible {
+  outline: 3px solid #f6b722;
+  outline-offset: 2px;
 }

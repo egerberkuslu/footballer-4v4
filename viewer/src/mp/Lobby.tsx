@@ -1,15 +1,14 @@
 // Ana menu + cok oyunculu lobi + mac ici ag rozeti/sohbet (L). Canvas DISINA takilir: <MpOverlay />.
 // Acilis: adres cubugunda parametre yoksa (ya da ?menu=1) ana menu acilir; ?oda=KOD (ya da ?room=) dogrudan katilir.
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { EMOTES, MAX_CHAT, normalizeCode, type Member, type Settings, type Side } from './protocol'
+import { EMOTES, MAX_CHAT, type Member, type Settings, type Side } from './protocol'
 import { net } from './role'
 import {
-  guestJoin, hostCreate, hostKick, hostSetSettings, hostStart, hostStop, leave, mp, mpVersion, playSolo,
-  sendChat, sendEmote, setName, setPref, setScreen, subscribeMp,
+  guestJoin, hostKick, hostSetSettings, hostStart, hostStop, leave, mp, mpVersion,
+  sendChat, sendEmote, setPref, setScreen, subscribeMp,
 } from './session'
-import { withCurtain } from '../ui/curtain'
-import { openGamepadSettings } from '../ui/gamepadUi'
-import { signalLabel } from './transport'
+import { MainMenu, MpMenu } from '../ui/MainMenu'
+import { setMenuOpen } from '../ui/gamepadUi'
 import { guestStats } from './sync'
 import './mp.css'
 
@@ -31,90 +30,6 @@ const sideKey = (s: Side) => String(s)
     /* bassiz */
   }
 })()
-
-function NameField() {
-  useMp()
-  return (
-    <label className="mp-field">
-      <span>Oyuncu adı</span>
-      <input value={mp.name} maxLength={16} placeholder="Adın" onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.stopPropagation()} />
-    </label>
-  )
-}
-
-function MainMenu() {
-  return (
-    <div className="mp-card mp-menu">
-      <div className="mp-brand">
-        <b>4'e 4</b>
-        <span>FUTBOL</span>
-      </div>
-      <NameField />
-      <div className="mp-modes">
-        <button onClick={() => withCurtain(() => playSolo('antrenman'), 'Antrenman hazırlanıyor')}>
-          <i>◎</i>
-          <b>Antrenman</b>
-          <small>Serbest şut çalışması</small>
-        </button>
-        <button onClick={() => withCurtain(() => playSolo('mac'), 'Maç hazırlanıyor')}>
-          <i>▶</i>
-          <b>Tek oyunculu maç</b>
-          <small>Yapay zekâya karşı 4'e 4</small>
-        </button>
-        <button className="hot" onClick={() => setScreen('mp')}>
-          <i>⇄</i>
-          <b>Çok oyunculu</b>
-          <small>Oda kur ya da kodla katıl</small>
-        </button>
-        <button onClick={() => openGamepadSettings()}>
-          <i>🎮</i>
-          <b>Kol Ayarları</b>
-          <small>Düğme ve çubuk eşlemesi</small>
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function MpMenu() {
-  useMp()
-  const [code, setCode] = useState('')
-  const busy = mp.conn === 'connecting'
-  return (
-    <div className="mp-card mp-join">
-      <div className="mp-head">
-        <button className="mp-back" onClick={() => (leave(), setScreen('menu'))}>
-          ‹ Geri
-        </button>
-        <b>Çok oyunculu</b>
-      </div>
-      <NameField />
-      <button className="mp-primary" disabled={busy} onClick={() => hostCreate()}>
-        Oda kur
-      </button>
-      <div className="mp-or">ya da</div>
-      <div className="mp-coderow">
-        <input
-          className="mp-code"
-          value={code}
-          placeholder="KOD"
-          maxLength={5}
-          onChange={(e) => setCode(normalizeCode(e.target.value))}
-          onKeyDown={(e) => {
-            e.stopPropagation()
-            if (e.key === 'Enter') guestJoin(code)
-          }}
-        />
-        <button disabled={busy || code.length !== 5} onClick={() => guestJoin(code)}>
-          Katıl
-        </button>
-      </div>
-      {mp.info && <div className="mp-info">{mp.info}</div>}
-      {mp.error && <div className="mp-err">{mp.error}</div>}
-      <div className="mp-foot">Sinyal: {signalLabel()}</div>
-    </div>
-  )
-}
 
 function PingDot({ ms }: { ms: number }) {
   const c = ms < 0 ? 'na' : ms < 80 ? 'good' : ms < 160 ? 'mid' : 'bad'
@@ -414,13 +329,23 @@ export function MpOverlay() {
   useMp()
   const s = mp.screen
   const overlay = s === 'menu' || s === 'mp' || s === 'lobby'
+  // oyun girdisi, lobi acikken de menu kilidinde (ana menu/mp kendi kilidini ayrica koyar)
+  useEffect(() => {
+    if (s === 'lobby') setMenuOpen(true)
+    return () => {
+      if (s === 'lobby') setMenuOpen(false)
+    }
+  }, [s])
   return (
     <>
-      {overlay && (
+      {(s === 'menu' || s === 'mp') && (
+        <div onPointerDown={(e) => e.stopPropagation()} onWheel={(e) => e.stopPropagation()}>
+          {s === 'menu' ? <MainMenu /> : <MpMenu />}
+        </div>
+      )}
+      {s === 'lobby' && (
         <div className="mp-overlay" onPointerDown={(e) => e.stopPropagation()} onWheel={(e) => e.stopPropagation()}>
-          {s === 'menu' && <MainMenu />}
-          {s === 'mp' && <MpMenu />}
-          {s === 'lobby' && <LobbyView />}
+          <LobbyView />
         </div>
       )}
       {!overlay && mp.inMatch && <InMatch />}

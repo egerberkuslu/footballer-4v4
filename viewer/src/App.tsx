@@ -10,6 +10,7 @@ import { isVarActive, subscribeVar, varVersion } from './var/store'
 import { BootOverlay } from './ui/BootOverlay'
 import { QualityPrompt } from './env/QualityPrompt'
 import { PadPoll } from './control/gamepad'
+import { PadNav, PadNotice } from './ui/padNav'
 import { Warmup } from './ui/Warmup'
 import { NetSync } from './mp/NetSync'
 import { isGuest } from './mp/role'
@@ -100,6 +101,8 @@ export default function App() {
       <VarOverlay />
       {MATCH && <RulesHud />}
       <PadPoll />
+      <PadNav />
+      <PadNotice />
       <MpGate />
       <DevPanel />
       <BootOverlay />

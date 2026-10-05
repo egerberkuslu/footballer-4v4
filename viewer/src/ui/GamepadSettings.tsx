@@ -21,12 +21,13 @@ import {
   type Logical,
   type PadInfo,
 } from '../control/gamepadConfig'
-import { closeGamepadSettings, gamepadSettingsOpen, gamepadUiVersion, subscribeGamepadUi } from './gamepadUi'
+import { cancelDirTest, getDirTest, onDirTestChange, padLive, startDirTest } from '../control/gamepad'
+import { closeGamepadSettings, settingsPanelOpen, gamepadUiVersion, subscribeGamepadUi } from './gamepadUi'
 import './gamepadSettings.css'
 
 const useOpen = () => {
   useSyncExternalStore(subscribeGamepadUi, gamepadUiVersion)
-  return gamepadSettingsOpen()
+  return settingsPanelOpen()
 }
 let sv = 0
 const subscribeSettings = (f: () => void) =>
@@ -270,6 +271,67 @@ function useStopRef(onEsc: () => void) {
   return stop
 }
 
+// ------------------------------------------------------------ yon testi + canli cubuk gostergesi
+const dirWord = (x: number, y: number) => {
+  const a = Math.abs(y) >= Math.abs(x) ? (y > 0.4 ? 'İLERİ' : y < -0.4 ? 'GERİ' : '') : x > 0.4 ? 'SAĞ' : x < -0.4 ? 'SOL' : ''
+  return a || '—'
+}
+function StickDot({ kind, label }: { kind: 'move' | 'look'; label: string }) {
+  const dot = useRef<HTMLSpanElement>(null)
+  const txt = useRef<HTMLSpanElement>(null)
+  useEffect(() => {
+    let raf = 0
+    const tick = () => {
+      raf = requestAnimationFrame(tick)
+      const v = padLive[kind]
+      if (dot.current) dot.current.style.transform = `translate(${v.x * 30}px, ${-v.y * 30}px)`
+      if (txt.current) txt.current.textContent = dirWord(v.x, v.y)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [kind])
+  return (
+    <div className="gps-stick">
+      <div className="gps-stick-box">
+        <span ref={dot} className="gps-stick-dot" />
+      </div>
+      <b>{label}</b>
+      <span ref={txt} className="gps-stick-dir">—</span>
+    </div>
+  )
+}
+function DirTest({ connected }: { connected: boolean }) {
+  const [, force] = useState(0)
+  useEffect(() => onDirTestChange(() => force((n) => n + 1)), [])
+  useEffect(() => {
+    const h = () => startDirTest()
+    window.addEventListener('pad-dir-test', h)
+    return () => {
+      window.removeEventListener('pad-dir-test', h)
+      cancelDirTest()
+    }
+  }, [])
+  const t = getDirTest()
+  return (
+    <div className="gps-dir">
+      <div className="gps-sticks">
+        <StickDot kind="move" label="Sol" />
+        <StickDot kind="look" label="Sağ" />
+      </div>
+      <div className={`gps-dir-msg ${t.step ? 'run' : ''}`}>{t.step ? t.msg : t.done ? t.msg || 'Test tamam' : 'Çubuğu yukarı itince oyun İLERİ göstermeli.'}</div>
+      <div className="gps-seg">
+        {t.step ? (
+          <button onClick={() => cancelDirTest()}>İptal</button>
+        ) : (
+          <button disabled={!connected} onClick={() => startDirTest()}>
+            Yön testini başlat
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ------------------------------------------------------------ tus atama tablosu
 function Bindings({ s, pad }: { s: Settings; pad: PadInfo }) {
   const [learn, setLearn] = useState<ActionId | null>(null)
@@ -409,7 +471,11 @@ function Panel() {
               onChange={(v) => set({ camSpeed: v })}
             />
             <Slider label="Tetik eşiği" value={s.trigger} min={0.1} max={0.9} step={0.01} fmt={pct} onChange={(v) => set({ trigger: v })} />
-            <Toggle label="Kamera Y eksenini ters çevir" on={s.invertY} onChange={(v) => set({ invertY: v })} />
+            <Toggle label="Sol çubuk Y ters (hareket ileri/geri)" on={s.invertL} onChange={(v) => set({ invertL: v })} />
+            <Toggle label="Sağ çubuk Y ters (kamera)" on={s.invertY} onChange={(v) => set({ invertY: v })} />
+            <Toggle label="D-pad ↑/↓ ters" on={s.dpadInvert} onChange={(v) => set({ dpadInvert: v })} />
+            <h3>Yön testi</h3>
+            <DirTest connected={pad.connected} />
 
             <h3>Titreşim</h3>
             <Toggle label="Titreşim açık" on={s.rumble} onChange={(v) => set({ rumble: v })} />

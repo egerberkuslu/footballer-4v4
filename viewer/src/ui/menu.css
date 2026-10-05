@@ -1,0 +1,406 @@
+/* Ana menu (M2): tam ekran, solda dikey liste, sagda panel. Koyu zemin + sari/turuncu vurgu. z-index 40 < ayar 45 < yukleme 60 */
+.mm-root {
+  --y: #f6b722;
+  --o: #ee7b30;
+  --txt: #f4f6f8;
+  --dim: rgba(244, 246, 248, 0.6);
+  --head: 'Bahnschrift', 'Impact', 'Ubuntu Sans', 'DejaVu Sans Condensed', 'Arial Black', system-ui, sans-serif;
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  color: var(--txt);
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  user-select: none;
+  background:
+    linear-gradient(180deg, rgba(5, 9, 12, 0.92) 0, rgba(5, 9, 12, 0.35) 18%, rgba(5, 9, 12, 0.35) 78%, rgba(5, 9, 12, 0.94) 100%),
+    linear-gradient(100deg, rgba(5, 9, 12, 0.94) 0%, rgba(5, 9, 12, 0.84) 36%, rgba(5, 9, 12, 0.5) 72%, rgba(5, 9, 12, 0.7) 100%);
+  animation: mm-fade 0.3s ease-out;
+}
+@keyframes mm-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ust serit */
+.mm-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 56px 0;
+}
+.mm-logo {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.mm-logo b {
+  font: italic 900 30px/1 var(--head);
+  color: var(--o);
+  letter-spacing: -0.5px;
+}
+.mm-logo span {
+  font: 700 11px/1 var(--head);
+  letter-spacing: 5px;
+  color: var(--dim);
+}
+.mm-status {
+  display: flex;
+  gap: 22px;
+  font-size: 12px;
+  color: var(--dim);
+  letter-spacing: 0.5px;
+}
+.mm-net {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.mm-net i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #8a929a;
+}
+.mm-net.on i {
+  background: #3ddc6a;
+  box-shadow: 0 0 8px #3ddc6a;
+}
+
+/* govde */
+.mm-main {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(380px, 46%) 1fr;
+  gap: 40px;
+  padding: 0 56px;
+  align-items: center;
+}
+.mm-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.mm-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-width: 340px;
+  padding: 11px 34px 11px 26px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dim);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transform-origin: left center;
+  transition: transform 0.14s, color 0.14s, background 0.14s;
+}
+.mm-item b {
+  font: italic 900 28px/1.1 var(--head);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.mm-item small {
+  font-size: 12px;
+  letter-spacing: 0.3px;
+  opacity: 0;
+  max-height: 0;
+  transition: opacity 0.14s, max-height 0.14s;
+}
+.mm-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 5px;
+  border-radius: 3px;
+  background: var(--y);
+  transform: scaleY(0);
+  transition: transform 0.14s;
+}
+.mm-item.sel {
+  color: #fff;
+  transform: scale(1.12) translateX(10px);
+  background: linear-gradient(90deg, rgba(246, 183, 34, 0.24), rgba(246, 183, 34, 0.02) 90%);
+  text-shadow: 0 0 22px rgba(246, 183, 34, 0.55);
+}
+.mm-item.sel small {
+  opacity: 0.85;
+  max-height: 20px;
+  color: #ffe9a8;
+}
+.mm-item.sel::before {
+  transform: scaleY(1);
+}
+.mm-item:focus {
+  outline: none;
+}
+/* BUYUK, net odak halkasi (klavye ve kol) */
+.mm-item:focus-visible,
+.mm-item[data-pad-focus]:focus-visible,
+.mm-seg button:focus-visible,
+.mm-field input:focus-visible,
+.mm-code:focus-visible {
+  outline: 3px solid var(--y);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 7px rgba(246, 183, 34, 0.22);
+}
+.mm-item:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.mm-item.back b {
+  font-size: 20px;
+}
+.mm-item.code {
+  cursor: default;
+}
+.mm-code {
+  margin-top: 6px;
+  width: 190px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font: 800 24px/1 var(--head);
+  letter-spacing: 6px;
+  text-transform: uppercase;
+}
+.mm-code::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* sag panel */
+.mm-panel {
+  justify-self: end;
+  width: min(100%, 520px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 26px 28px;
+  border-radius: 6px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03));
+  border-left: 4px solid var(--o);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  animation: mm-panel 0.2s ease-out;
+}
+@keyframes mm-panel {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+}
+.mm-panel h3 {
+  margin: 6px 0 0;
+  font: italic 800 14px/1 var(--head);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--y);
+}
+.mm-panel h3:first-child {
+  margin-top: 0;
+}
+.mm-jerseys {
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+}
+.mm-jersey {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+.mm-jersey svg {
+  width: 100%;
+  max-width: 170px;
+  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.5));
+  animation: mm-bob 5s ease-in-out infinite;
+}
+.mm-jersey:nth-child(2) svg {
+  animation-delay: -2.5s;
+}
+@keyframes mm-bob {
+  50% {
+    transform: translateY(-5px) rotate(-1.2deg);
+  }
+}
+.mm-jnum {
+  fill: rgba(255, 255, 255, 0.92);
+  font: italic 900 46px var(--head);
+  stroke: rgba(0, 0, 0, 0.35);
+  stroke-width: 1px;
+}
+.mm-jersey figcaption {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.mm-jersey b {
+  font: italic 900 15px var(--head);
+  letter-spacing: 2px;
+}
+.mm-jersey small {
+  color: var(--dim);
+  font-size: 11px;
+}
+.mm-seg {
+  display: flex;
+  gap: 6px;
+}
+.mm-seg button {
+  flex: 1;
+  padding: 11px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--txt);
+  font: italic 800 14px var(--head);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.mm-seg button:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+.mm-seg button.on {
+  background: var(--y);
+  border-color: var(--y);
+  color: #1b1405;
+}
+.mm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.mm-field input {
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  font: 600 15px 'Inter', system-ui, sans-serif;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.mm-ctl {
+  display: grid;
+  grid-template-columns: 1.2fr 1.3fr 0.7fr;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  font-size: 13px;
+}
+.mm-ctl.head {
+  font-size: 10px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.mm-ctl kbd {
+  justify-self: start;
+  padding: 3px 9px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font: 600 12px 'Inter', system-ui, sans-serif;
+}
+.mm-ctl kbd.pad {
+  background: rgba(246, 183, 34, 0.18);
+  border-color: rgba(246, 183, 34, 0.45);
+  color: #ffe08a;
+}
+.mm-note,
+.mm-about {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: rgba(244, 246, 248, 0.82);
+}
+.mm-note,
+.mm-about.dim {
+  color: var(--dim);
+  font-size: 12px;
+}
+.mm-msg {
+  padding: 9px 12px;
+  border-radius: 6px;
+  background: rgba(246, 183, 34, 0.15);
+  border: 1px solid rgba(246, 183, 34, 0.4);
+  font-size: 13px;
+}
+.mm-msg.err {
+  background: rgba(220, 70, 70, 0.18);
+  border-color: rgba(220, 70, 70, 0.5);
+}
+
+/* alt: kol ipuclari */
+.mm-hints {
+  display: flex;
+  gap: 28px;
+  justify-content: center;
+  padding: 14px 56px 22px;
+  font-size: 13px;
+  color: var(--dim);
+  letter-spacing: 0.4px;
+}
+.mm-hints span {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.mm-hints kbd {
+  min-width: 30px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #fff;
+  font: 700 13px 'Inter', system-ui, sans-serif;
+}
+
+@media (max-width: 1000px) {
+  .mm-main {
+    grid-template-columns: 1fr;
+    align-content: start;
+    overflow: auto;
+    padding-top: 12px;
+  }
+  .mm-panel {
+    justify-self: stretch;
+  }
+  .mm-strip,
+  .mm-hints {
+    padding-left: 22px;
+    padding-right: 22px;
+  }
+  .mm-item b {
+    font-size: 22px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mm-jersey svg,
+  .mm-root,
+  .mm-panel {
+    animation: none;
+  }
+}

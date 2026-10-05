@@ -3,13 +3,23 @@
 // Durum globalThis'te tutulur: sicak modul degisimi (HMR) iki kopya olusturursa da tek durum kalir.
 interface Shared {
   open: boolean
+  menu: boolean
   ver: number
   subs: Set<() => void>
 }
 const g = globalThis as unknown as { __gpsUi?: Shared }
-const S: Shared = (g.__gpsUi ??= { open: false, ver: 0, subs: new Set() })
+const S: Shared = (g.__gpsUi ??= { open: false, menu: false, ver: 0, subs: new Set() })
 
-export const gamepadSettingsOpen = () => S.open
+/** Kol Ayarlari paneli acik mi (yalniz panel) */
+export const settingsPanelOpen = () => S.open
+/** panel ya da tam ekran menu acik: F2 bu sirada oyun girdisini (kol/klavye eylemleri) sifirlamali */
+export const gamepadSettingsOpen = () => S.open || S.menu
+export function setMenuOpen(v: boolean) {
+  if (S.menu === v) return
+  S.menu = v
+  S.ver++
+  S.subs.forEach((f) => f())
+}
 export const gamepadUiVersion = () => S.ver
 export const subscribeGamepadUi = (f: () => void) => {
   S.subs.add(f)

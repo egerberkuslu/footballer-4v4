@@ -1,11 +1,12 @@
 // Yukleme ekrani + gecis perdesi (M). Canvas DISINA takilir: <BootOverlay />.
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { sfx } from '../rules/audio'
 import { BOOT, boot, bootError, bootVersion, hideSplash, subscribeBoot } from './boot'
 import { currentStep, listSteps, loadVersion, onLoadError, overall, subscribeLoad, type Step } from './loadTracker'
 
 onLoadError(bootError)
 import { startPlay } from './Warmup'
+import { okLabel, useNav, usePad } from './menuNav'
 import './boot.css'
 
 const TIPS: [string, string][] = [
@@ -70,7 +71,7 @@ function StepRow({ s }: { s: Step }) {
 function Tip() {
   const [i, setI] = useState(() => Math.floor(Math.random() * TIPS.length))
   useEffect(() => {
-    const t = setInterval(() => setI((k) => (k + 1) % TIPS.length), 4500)
+    const t = setInterval(() => setI((k) => (k + 1) % TIPS.length), 4000)
     return () => clearInterval(t)
   }, [])
   const [k, v] = TIPS[i]
@@ -80,6 +81,43 @@ function Tip() {
       <span>{v}</span>
     </div>
   )
+}
+
+const FRIENDLY: Record<string, string> = {
+  scene: 'Saha hazırlanıyor',
+  model: 'Oyuncular hazırlanıyor',
+  'model-lod': 'Oyuncular hazırlanıyor',
+  kits: 'Formalar hazırlanıyor',
+  trees: 'Çevre hazırlanıyor',
+  files: 'Dosyalar yükleniyor',
+  gpu: 'Dokular ekran kartına aktarılıyor',
+  shader: 'Efektler hazırlanıyor',
+  frames: 'Son hazırlıklar yapılıyor',
+}
+const friendly = (s: Step) => `${FRIENDLY[s.id] ?? s.label}…`
+
+/** yuzde degeri yumusak akar (gercek ilerlemeyi geride kovalar, asla ondan ileri gecmez) */
+function useSmooth(target: number) {
+  const [v, setV] = useState(0)
+  const t = useRef(target)
+  t.current = target
+  useEffect(() => {
+    let raf = 0
+    let last = performance.now()
+    const f = (now: number) => {
+      const dt = Math.min(0.1, (now - last) / 1000)
+      last = now
+      setV((x) => {
+        const g = t.current
+        if (x >= g) return g
+        return Math.min(g, x + Math.max(0.15, (g - x) * 5 * dt * 3))
+      })
+      raf = requestAnimationFrame(f)
+    }
+    raf = requestAnimationFrame(f)
+    return () => cancelAnimationFrame(raf)
+  }, [])
+  return v
 }
 
 function play(force = false) {
@@ -130,6 +168,15 @@ function Loading({ leaving }: { leaving: boolean }) {
     return () => window.removeEventListener('keydown', onKey, true)
   }, [])
 
+  const [open, setOpen] = useState(false)
+  const shown = useSmooth(ready ? 100 : pct)
+  const pad = usePad()
+  // kol: onay tusu da Oyna'dir (acilista basili tus tetiklemez)
+  useNav((k) => {
+    if (k === 'ok') play()
+  })
+  const label = ready ? 'Hazır' : cur ? friendly(cur) : 'Hazırlanıyor…'
+
   return (
     <div
       className={`boot ${leaving ? 'leaving' : ''}`}
@@ -148,46 +195,54 @@ function Loading({ leaving }: { leaving: boolean }) {
       <div className="boot-sun" />
       <div className="boot-vignette" />
 
-      <div className="boot-card">
-        <div className="boot-brand">
+      <div className="bl">
+        <div className="bl-logo">
           <b>4'e 4</b>
           <span>FUTBOL</span>
         </div>
 
-        {!ready ? (
-          <>
-            <div className="boot-bar" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
-              <div className="fill" style={{ transform: `scaleX(${Math.max(0.02, pct / 100)})` }} />
-              <div className="shine" />
+        <div className="bl-mid">
+          {ready ? (
+            <button className="bl-play" onClick={() => play()} autoFocus>
+              OYNA
+              <kbd>{okLabel(pad)}</kbd>
+            </button>
+          ) : (
+            <div className="bl-pct" aria-live="off">
+              {Math.round(shown)}
+              <small>%</small>
             </div>
-            <div className="boot-now">
-              <span>{cur ? `${cur.label}${cur.state === 'run' && cur.detail ? ` · ${cur.detail}` : ''}` : 'Hazırlanıyor'}</span>
-              <b>%{pct}</b>
-            </div>
-            {stalled && (
-              <button className="boot-anyway" onClick={() => play(true)}>
-                {boot.errors.length ? 'Hataya rağmen oyna' : 'Uzun sürdü, yine de oyna'}
-              </button>
-            )}
-          </>
-        ) : (
-          <button className="boot-play" onClick={() => play()} autoFocus>
-            Oyna
-            <kbd>Enter</kbd>
-          </button>
-        )}
-
-        {boot.errors.map((e, i) => (
-          <div key={i} className="boot-err">
-            {e}
+          )}
+          <div className="bl-bar" role="progressbar" aria-valuenow={Math.round(shown)} aria-valuemin={0} aria-valuemax={100}>
+            <div className="fill" style={{ transform: `scaleX(${Math.max(0.015, shown / 100)})` }} />
+            <div className="shine" />
           </div>
-        ))}
-        <ul className="boot-steps">
-          {steps.map((s) => (
-            <StepRow key={s.id} s={s} />
+          <div className="bl-step">{label}</div>
+          {stalled && (
+            <button className="boot-anyway" onClick={() => play(true)}>
+              {boot.errors.length ? 'Hataya rağmen oyna' : 'Uzun sürdü, yine de oyna'}
+            </button>
+          )}
+          {boot.errors.map((e, i) => (
+            <div key={i} className="boot-err">
+              {e}
+            </div>
           ))}
-        </ul>
-        <Tip />
+        </div>
+
+        <div className="bl-foot">
+          <Tip />
+          <button className="bl-more" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+            Ayrıntılar {open ? '▴' : '▾'}
+          </button>
+          {open && (
+            <ul className="boot-steps bl-steps">
+              {steps.map((s) => (
+                <StepRow key={s.id} s={s} />
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   )

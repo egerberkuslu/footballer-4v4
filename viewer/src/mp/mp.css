@@ -608,3 +608,28 @@
     transform: translateY(-60px) scale(1);
   }
 }
+
+/* menu temasina uyum (M2): lobi karti */
+.mp-card {
+  border: 0;
+  border-left: 4px solid #ee7b30;
+  border-radius: 6px;
+  background: rgba(8, 12, 16, 0.95);
+}
+.mp-card .mp-primary {
+  background: #f6b722;
+  border-color: #f6b722;
+  color: #1b1405;
+  font-weight: 800;
+}
+.mp-card .mp-primary:hover:not(:disabled) {
+  background: #ffc93a;
+}
+.mp-card button:focus-visible,
+.mp-card input:focus-visible {
+  outline: 3px solid #f6b722;
+  outline-offset: 2px;
+}
+.mp-overlay {
+  background: linear-gradient(100deg, rgba(5, 9, 12, 0.94), rgba(5, 9, 12, 0.6));
+}

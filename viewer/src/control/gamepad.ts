@@ -8,6 +8,7 @@ import {
   detectProfile,
   getPadInfo,
   getSettings,
+  setSettings,
   learnStep,
   rumble,
   setActuator,
@@ -44,7 +45,13 @@ export interface PadFrame {
   r1: boolean
   r1Down: boolean
   analog: { l2: number; r2: number }
+  /** menu gezinme (mod bagimsiz, atamalardan bagimsiz): d-pad ya da sol cubuk */
+  nav: { up: boolean; down: boolean; left: boolean; right: boolean; ok: boolean; back: boolean; menu: boolean }
 }
+
+/** son kare cubuk/d-pad yorumu (ters cevirme sonrasi), arayuz gostergesi icin */
+export const padLive = { move: { x: 0, y: 0 }, look: { x: 0, y: 0 }, dpad: { x: 0, y: 0 }, raw: [] as number[] }
+
 
 type PadLike = {
   id: string
@@ -77,6 +84,7 @@ function rightAxes(gp: PadLike, std: boolean): [number, number] {
 
 /** mantiksal dugmenin analog degeri 0..1 (tetiklerde eksen yedegi) */
 function logicalValue(gp: PadLike, l: Logical, std: boolean, profile: keyof typeof PROFILE_BUTTONS): number {
+  if (getSettings().dpadInvert) l = l === 'dup' ? 'ddown' : l === 'ddown' ? 'dup' : l
   const idx = PROFILE_BUTTONS[profile][l]
   if (l === 'dleft' || l === 'dright' || l === 'dup' || l === 'ddown') {
     if (idx !== undefined && gp.buttons[idx]) return gp.buttons[idx].pressed ? 1 : 0
@@ -125,6 +133,100 @@ export function pollPad(): PadFrame | null {
   return cacheV
 }
 
+const NO_NAV = { up: false, down: false, left: false, right: false, ok: false, back: false, menu: false }
+function emptyFrame(name: string): PadFrame {
+  const z = () => Object.fromEntries(ACTIONS.map((a) => [a.id, false])) as Record<ActionId, boolean>
+  return { name, move: { x: 0, y: 0 }, look: { x: 0, y: 0 }, held: z(), down: z(), up: z(), l1: false, r1: false, r1Down: false, analog: { l2: 0, r2: 0 }, nav: { ...NO_NAV } }
+}
+
+// ------------------------------------------------------------------ yon testi (dikey eksen isaretleri)
+export type DirStep = 'left' | 'right' | 'dpad'
+const dir = { step: null as DirStep | null, base: null as number[] | null, armed: false, msg: '', done: false }
+const dirSubs = new Set<() => void>()
+const dirNotify = () => dirSubs.forEach((f) => f())
+export const getDirTest = () => ({ step: dir.step, msg: dir.msg, done: dir.done })
+export function onDirTestChange(cb: () => void) {
+  dirSubs.add(cb)
+  return () => {
+    dirSubs.delete(cb)
+  }
+}
+const DIR_MSG: Record<DirStep, string> = { left: 'Sol çubuğu YUKARI it', right: 'Sağ çubuğu YUKARI it', dpad: 'D-pad YUKARI (↑) bas' }
+export function startDirTest() {
+  dir.step = 'left'
+  dir.base = null
+  dir.armed = false
+  dir.done = false
+  dir.msg = DIR_MSG.left
+  dirNotify()
+}
+export function cancelDirTest() {
+  dir.step = null
+  dir.base = null
+  dir.msg = ''
+  dir.done = false
+  dirNotify()
+}
+function dirNext(step: DirStep | null, msg = '') {
+  dir.step = step
+  dir.base = null
+  dir.armed = false
+  dir.msg = step ? DIR_MSG[step] : msg
+  dir.done = step === null
+  if (step === null) setSettings({ dirTested: true })
+  dirNotify()
+}
+/** d-pad yukari/asagi FIZIKSEL raporu (ters cevirme uygulanmaz): -1 yukari, +1 asagi, 0 yok, null olculemez */
+function dpadPhysicalY(gp: PadLike, std: boolean): number | null {
+  if (std || gp.buttons.length >= 16) {
+    if (gp.buttons[12]?.pressed) return -1
+    if (gp.buttons[13]?.pressed) return 1
+    return 0
+  }
+  if (gp.axes.length >= 8 && dir.base) {
+    const v = (gp.axes[7] ?? 0) - (dir.base[7] ?? 0)
+    return Math.abs(v) > 0.6 ? Math.sign(v) : 0
+  }
+  return null
+}
+/** yon testi adimi; true: bu kare oyun girdisi yutulsun */
+function dirStep(gp: PadLike, std: boolean): boolean {
+  if (!dir.step) return false
+  if (!dir.base) dir.base = Array.from(gp.axes)
+  const base = dir.base
+  const [, ryA] = rightAxes(gp, std)
+  const idx = dir.step === 'left' ? 1 : ryA
+  if (dir.step === 'dpad') {
+    const y = dpadPhysicalY(gp, std)
+    if (y === null) {
+      dirNext(null, 'D-pad bu kolda ölçülemedi (atlandı)')
+      return true
+    }
+    if (!dir.armed) {
+      if (y === 0) dir.armed = true
+      return true
+    }
+    if (y !== 0) {
+      // yukari basinca +1 (asagi) raporlandiysa ters
+      setSettings({ dpadInvert: y > 0 })
+      dirNext(null, y > 0 ? 'D-pad ↑/↓ çevrildi' : 'D-pad doğru')
+    }
+    return true
+  }
+  const d = (gp.axes[idx] ?? 0) - (base[idx] ?? 0)
+  if (!dir.armed) {
+    if (Math.abs(d) < 0.3) dir.armed = true
+    return true
+  }
+  if (Math.abs(d) > 0.6) {
+    // yukari itince ham deger NEGATIF olmali; pozitifse ters
+    if (dir.step === 'left') setSettings({ invertL: d > 0 })
+    else setSettings({ invertY: d > 0 })
+    dirNext(dir.step === 'left' ? 'right' : 'dpad')
+  }
+  return true
+}
+
 function pollPadRaw(): PadFrame | null {
   const gps = (navigator.getGamepads?.() ?? []) as (PadLike | null)[]
   const gp = gps.find((g) => g && g.connected) ?? null
@@ -137,26 +239,18 @@ function pollPadRaw(): PadFrame | null {
   setActuator((gp.vibrationActuator as never) ?? null)
   const std = pi.profile === 'standard'
   const S = getSettings()
-  // atama sihirbazi acikken girdi yutulur
-  if (learnStep(gp.buttons, gp.axes)) {
+  // atama sihirbazi ya da yon testi acikken oyun girdisi yutulur
+  const swallowDir = dirStep(gp, std)
+  if (learnStep(gp.buttons, gp.axes) || swallowDir) {
     for (const a of ACTIONS) prev[a.id] = true
     prevR1 = true
-    return {
-      name: pi.name,
-      move: { x: 0, y: 0 },
-      look: { x: 0, y: 0 },
-      held: Object.fromEntries(ACTIONS.map((a) => [a.id, false])) as Record<ActionId, boolean>,
-      down: Object.fromEntries(ACTIONS.map((a) => [a.id, false])) as Record<ActionId, boolean>,
-      up: Object.fromEntries(ACTIONS.map((a) => [a.id, false])) as Record<ActionId, boolean>,
-      l1: false,
-      r1: false,
-      r1Down: false,
-      analog: { l2: 0, r2: 0 },
-    }
+    return emptyFrame(pi.name)
   }
   const [mx, my] = stick(gp.axes[0] ?? 0, gp.axes[1] ?? 0, S.deadL, S.curve)
   const [rxA, ryA] = rightAxes(gp, std)
   const [lx, ly] = stick(gp.axes[rxA] ?? 0, gp.axes[ryA] ?? 0, S.deadR, S.curve)
+  // ham eksen: yukari itince NEGATIF; hareket y yukari +. invertL aygit tersse duzeltir
+  const moveY = (S.invertL ? 1 : -1) * my
   const held = {} as Record<ActionId, boolean>
   const down = {} as Record<ActionId, boolean>
   const up = {} as Record<ActionId, boolean>
@@ -177,10 +271,30 @@ function pollPadRaw(): PadFrame | null {
   const l1 = logicalValue(gp, 'l1', std, pi.profile) > 0.5
   const r1Down = r1 && !prevR1
   prevR1 = r1
+  const lookY = S.invertY ? ly : -ly // y yukari +
+  const dv = (l: Logical) => logicalValue(gp, l, std, pi.profile) > 0.5
+  const dpadY = dv('dup') ? 1 : dv('ddown') ? -1 : 0
+  const dpadX = dv('dright') ? 1 : dv('dleft') ? -1 : 0
+  padLive.move.x = mx
+  padLive.move.y = moveY
+  padLive.look.x = lx
+  padLive.look.y = lookY
+  padLive.dpad.x = dpadX
+  padLive.dpad.y = dpadY
+  padLive.raw = Array.from(gp.axes)
   return {
     name: pi.name,
-    move: { x: mx, y: my },
-    look: { x: lx, y: S.invertY ? ly : -ly }, // y yukari +
+    move: { x: mx, y: moveY },
+    look: { x: lx, y: lookY },
+    nav: {
+      up: dpadY > 0 || moveY > 0.6,
+      down: dpadY < 0 || moveY < -0.6,
+      left: dpadX < 0 || mx < -0.6,
+      right: dpadX > 0 || mx > 0.6,
+      ok: dv('cross'),
+      back: dv('circle'),
+      menu: dv('options'),
+    },
     held,
     down,
     up,

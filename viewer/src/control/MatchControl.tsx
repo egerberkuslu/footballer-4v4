@@ -19,6 +19,7 @@ import { CURL_STEPS, V_MAX, V_MIN, bumpCtl, ctl, setCurl, setCurlAnalog } from '
 import { getSettings } from './gamepadConfig'
 import { pollPad, installRumble } from './gamepad'
 import { gamepadSettingsOpen } from '../ui/gamepadUi'
+import { padNavLayerOpen } from '../ui/padNav'
 import { toggleCam } from './ShotController'
 import { setScreen } from '../mp/session'
 
@@ -301,7 +302,7 @@ export function MatchControl() {
     let sprint = keys.has('shift')
 
     // gamepad: profil/atama/olu bolge gamepad.ts + gamepadConfig.ts'te
-    const gp = gamepadSettingsOpen() ? null : pollPad() // ayar ekrani acikken oyun girdisi yok
+    const gp = gamepadSettingsOpen() || padNavLayerOpen() ? null : pollPad() // menu/ayar acikken oyun girdisi yok
     let padJockey = false
     let forceMove: [number, number] | null = null
     if (gp) {

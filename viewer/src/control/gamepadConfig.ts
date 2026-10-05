@@ -99,7 +99,10 @@ export interface GamepadSettings {
   deadR: number
   curve: 'dogrusal' | 'ustel'
   camSpeed: number // sag cubuk kamera hizi carpani 0.3..2
-  invertY: boolean
+  invertY: boolean // sag cubuk Y (kamera) ters
+  invertL: boolean // sol cubuk Y (hareket ileri/geri) ters
+  dpadInvert: boolean // D-pad yukari/asagi ters
+  dirTested: boolean // yon testi yapildi (otomatik oneri bir kez)
   trigger: number // analog tetik esigi 0.1..0.9
   rumble: boolean
   rumbleLevel: number // 0..1
@@ -113,6 +116,9 @@ export const DEFAULTS: GamepadSettings = {
   curve: 'dogrusal',
   camSpeed: 1,
   invertY: false,
+  invertL: false,
+  dpadInvert: false,
+  dirTested: false,
   trigger: 0.35,
   rumble: true,
   rumbleLevel: 0.6,
@@ -135,6 +141,9 @@ function sanitize(s: Partial<GamepadSettings>): GamepadSettings {
   o.rumbleLevel = clamp(Number(o.rumbleLevel), 0, 1)
   o.curve = o.curve === 'ustel' ? 'ustel' : 'dogrusal'
   o.invertY = !!o.invertY
+  o.invertL = !!o.invertL
+  o.dpadInvert = !!o.dpadInvert
+  o.dirTested = !!o.dirTested
   o.rumble = !!o.rumble
   o.bindings = { ...(s.bindings ?? {}) }
   return o
