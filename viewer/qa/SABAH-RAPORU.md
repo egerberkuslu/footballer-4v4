@@ -1,3 +1,13 @@
+# SON DURUM (koordinator, 06:50): OYUN YAYINDA
+Canli: https://egerberkuslu.github.io/footballer-4v4-play/ (public depo yalniz derlenmis site). Kaynak depo egerberkuslu/footballer-4v4 PRIVATE.
+Asagidaki O2 raporu 06:40 oncesi turlara dayanir; ASAGIDAKI MADDELERIN DURUMU:
+- COZULDU: maç sonu 'Yeniden oyna / Ana menu' (K2, rules-test 176, mp-ft-test 10/10); mavi/turuncu forma lekeleri (kok neden v2/v3 govdelere ana atlas baglanmasiydi, I2+E2 duzeltti); AI endirekt FK dogrudan sut (J2, 20/20 pas); VAR hakem monitor yani durusu ve kadraj; acik gol karti birimi.
+- YENI (bu raporda test edilmemisti, sahipleri kendi testlerini yapti, gercek cihazla degil): kirmizi kart = 30 sn ceza, falso (, . / tekerlek, onizleme egrisi), kaleci dalis sistemi (B2 keeperDive + I2 animasyon), PS4/DualSense kol destegi + Kol Ayarlari, kaleci/hakem/forma modelleri v2-v4.
+- ENTEGRASYON TURU (koordinator, final kod): tsc temiz, Firefox temiz, 90 s mac pageerror/NaN/takilma 0, 9/9 senaryo gecti (tac, korner, kaleci 3 s x2, ofsayt, penalti, elle VAR, onden kayma, net aut), rules-test 176/0, sim-test temiz. Canli site: 4xx/5xx yok, 60 fps, hata yok.
+- GERCEKTEN ACIK: gercek DS4/DualSense ile hicbir sey denenmedi; PeerJS bulutu (TURN yok) kati aglarda baglanamayabilir, gercek Pages alan adinda cok oyunculu denenmedi; Firefox'ta cok oyunculu denenmedi; ilk acilis ~56 MB indirme; hakemin ince sac cizgisi ve ense cevresinde kucuk deri araliklari (kozmetik); AI-AI maclarda gol 4-8/mac (hedef bandinda), AI ayakta mudahalede topu alma ~%14-31.
+- Denge: ayakta kurtarma zari yalniz INSAN sutunda acik (AI-AI'da acikken gol 2x siserdi).
+
+---
 # SABAH RAPORU (O2-qa, 06:40 durumu; sabah 08:00'de son kod değişikliği yoksa geçerlidir)
 
 Kapsam: gerçek GPU başsız Chrome 1080p, Firefox sağlık kontrolü, senaryo betikleri (`scripts/qa-*.mjs`, `scripts/qa-round.sh`). Kanıtlar `viewer/qa/r*/` altında, tur raporları `qa/rapor-*.md`.
