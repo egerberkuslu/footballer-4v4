@@ -22,10 +22,12 @@ def boot_ci(x, n=2000, seed=0):
 
 
 class Policy:
-    def __init__(self, kind, ckpt=None, dev="cuda", stochastic=False):
+    def __init__(self, kind, ckpt=None, dev="cuda", stochastic=False, model=None, onorm=None):
         self.kind, self.dev, self.stoch = kind, dev, stochastic
         self.rng = np.random.default_rng(0)
-        if kind == "ckpt":
+        if kind == "mem":  # egitim sirasinda: bellekteki model + calisan normalizasyon (eval ile AYNI kod yolu)
+            self.m, self.on, self.kind = model, onorm, "ckpt"
+        elif kind == "ckpt":
             s = torch.load(ckpt, map_location=dev, weights_only=False)
             a = s["meta"]["args"]
             self.m = ActorCritic(a["encoder"], a["hid"], a["role_mode"], a["critic"], a["comm_radius"], a["rounds"]).to(dev)

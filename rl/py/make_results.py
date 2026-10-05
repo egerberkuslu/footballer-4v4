@@ -35,3 +35,21 @@ out += ["", "## Yorum (dürüst)", "- Ogrenme VAR: egitim gol farki ve bolum odu
  "- Tek tohum (1), tek koşu: guven araligi yalniz degerlendirme mac orneklemini yansitir, egitim tohumu varyansini degil (planin >= 5 tohum kurali henuz uygulanmadi)."]
 open("rl/RESULTS_M1.md", "w").write("\n".join(out) + "\n")
 print("yazildi")
+
+# ---- parite bolumu
+par = json.load(open(R + "m1a/parity.json"))
+old = {r["opponent"]: r for r in json.load(open(R + "m1a/eval_stoch.json"))["results"]}
+fix = {r["opponent"]: r for r in json.load(open(R + "m1a/eval_stoch_fixed.json"))["results"]}
+out += ["", "## Parite: egitim vs degerlendirme tutarsizligi (cozuldu)", "",
+ "Belirti: ayni ckpt egitimde son bolumlerde gol farki +0.2..+0.3 iken `eval.py --stochastic --seed 777` vs `kolay` -0.99 verdi.", "",
+ f"**Neden: egitim/eval hatasi degil, rakip adi.** `eval_stoch.json` rakipleri `kolay|orta|zor` (on eksiz) olarak verilmis; env eski surumde `s.split(':')[1] ?? 'orta'` ile bilinmeyen adi sessizce `orta` seviyesine dusuruyordu, yani o tablonun uc satiri da AYNI rakipti (orta). Kanit: dogru `heuristic:orta` stokastik gol farki {fix['heuristic:orta']['goal_diff_mean']:+.2f} (atilan {fix['heuristic:orta']['gf_mean']:.2f}, yenen {fix['heuristic:orta']['ga_mean']:.2f}) ile on eksiz 'kolay' satiri {old['kolay']['goal_diff_mean']:+.2f} (atilan {old['kolay']['gf_mean']:.2f}, yenen {old['kolay']['ga_mean']:.2f}) birebir ortusuyor.",
+ "Duzeltme: `rl/node/env.mjs` artik `kolay|orta|zor` ve `heuristic:*` kabul eder, bilinmeyen adda HATA verir.", "",
+ "| rakip | stokastik gol farki [GA] (dogru ad, seed 777, 100 mac) | deterministik (seed 100000) | on eksiz ad ile (eski, aslinda orta) |", "|---|---|---|---|"]
+for o, k in [("heuristic:kolay", "kolay"), ("heuristic:orta", "orta"), ("heuristic:zor", "zor")]:
+    f, e, d0 = fix[o], ev[o], old[k]
+    out.append(f"| {o} | {f['goal_diff_mean']:+.2f} [{f['goal_diff_ci95'][0]:+.2f}, {f['goal_diff_ci95'][1]:+.2f}] | {e['goal_diff_mean']:+.2f} | {d0['goal_diff_mean']:+.2f} |")
+out += ["", f"Parite testi (`rl/tests/train_eval_parity.py`, ayni ckpt, ayni tohum, ayni normalizasyon, vs kolay, {par['episodes']} bolum, stokastik): egitim rollout yolu gol farki {par['train_path_gd']:+.2f}, eval.py yolu {par['eval_path']['goal_diff_mean']:+.2f} [GA {par['eval_path']['goal_diff_ci95'][0]:+.2f}, {par['eval_path']['goal_diff_ci95'][1]:+.2f}] (fark orneklem gurultusu icinde); normalize gozlem ortalamasi {par['train_path_obs_norm_mean']:+.3f}, std {par['train_path_obs_norm_std']:.3f} (calisan normalizasyon ckpt'ten yukleniyor ve donduruluyor). Dolayisiyla gozlem normalizasyonu, yan/aynalama, rol esleme, auto-reset ve gol farki hesabi egitim ile eval'de ayni.",
+ "Not: deterministik eylem (ortalama + argmax) stokastikten kotu (kolay: -1.09 vs +0.54): degerlendirmede iki mod ayri raporlanmali; yukaridaki 'MAPPO deepsets' degerlendirme tablosu deterministiktir. Bundan sonra egitim gunlugunde `eval_gd` sutunu her 400 guncellemede eval.py ile ayni kod yolundan (20 mac, stokastik) yazilir (`--eval-every`).",
+ "Onceki 'bosta tabani daha iyi' yorumu yalniz deterministik tablo icin gecerlidir: stokastik politika kolay'a karsi pozitif gol farki veriyor (+0.54 [+0.18, +0.90], G/B/M 50/21/29), yani kolay seviyesi YENILIYOR; orta ve zor yenilmiyor."]
+open("rl/RESULTS_M1.md", "w").write("\n".join(out) + "\n")
+print("parite eklendi")

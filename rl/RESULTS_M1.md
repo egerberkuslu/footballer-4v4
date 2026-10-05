@@ -37,3 +37,34 @@ Odul terimleri (bolum ortalamasi, ajan basina): goal -1.398 -> +0.239, ball_appr
 - Olasi nedenler / sonraki adim (ara olcut: odul terimleri ve entropi): yenen gol cezasi sekillendirmesiz ve seyrek; ayrik entropi hizla ~0.02-0.05'e coktu (maske cogu zaman tek gecerli eylem birakiyor); sabit gamma 0.99 ve 1200 adimlik bolum; daha uzun egitim (>= 20 M), savunma icin top-kale araligi/konumlanma sekillendirmesi, kolay seviyeden orta seviyeye mufredat. Hicbiri bu kosuda denenmedi.
 - Egitim (stokastik) son 1 M adim gol farki pozitif iken deterministik degerlendirmede negatif: deterministik eylem (ortalama + argmax) stokastikten daha kotu; `eval.py --stochastic` ile ayrica olculmedi (acik is).
 - Tek tohum (1), tek koşu: guven araligi yalniz degerlendirme mac orneklemini yansitir, egitim tohumu varyansini degil (planin >= 5 tohum kurali henuz uygulanmadi).
+
+## Parite: egitim vs degerlendirme tutarsizligi (cozuldu)
+
+Belirti: ayni ckpt egitimde son bolumlerde gol farki +0.2..+0.3 iken `eval.py --stochastic --seed 777` vs `kolay` -0.99 verdi.
+
+**Neden: egitim/eval hatasi degil, rakip adi.** `eval_stoch.json` rakipleri `kolay|orta|zor` (on eksiz) olarak verilmis; env eski surumde `s.split(':')[1] ?? 'orta'` ile bilinmeyen adi sessizce `orta` seviyesine dusuruyordu, yani o tablonun uc satiri da AYNI rakipti (orta). Kanit: dogru `heuristic:orta` stokastik gol farki -1.00 (atilan 2.53, yenen 3.53) ile on eksiz 'kolay' satiri -0.99 (atilan 2.60, yenen 3.59) birebir ortusuyor.
+Duzeltme: `rl/node/env.mjs` artik `kolay|orta|zor` ve `heuristic:*` kabul eder, bilinmeyen adda HATA verir.
+
+| rakip | stokastik gol farki [GA] (dogru ad, seed 777, 100 mac) | deterministik (seed 100000) | on eksiz ad ile (eski, aslinda orta) |
+|---|---|---|---|
+| heuristic:kolay | +0.54 [+0.18, +0.90] | -1.09 | -0.99 |
+| heuristic:orta | -1.00 [-1.27, -0.72] | -0.76 | -0.65 |
+| heuristic:zor | -2.04 [-2.34, -1.75] | -2.25 | -0.86 |
+
+Parite testi (`rl/tests/train_eval_parity.py`, ayni ckpt, ayni tohum, ayni normalizasyon, vs kolay, 100 bolum, stokastik): egitim rollout yolu gol farki +0.17, eval.py yolu +0.49 [GA +0.15, +0.84] (fark orneklem gurultusu icinde); normalize gozlem ortalamasi -0.001, std 1.015 (calisan normalizasyon ckpt'ten yukleniyor ve donduruluyor). Dolayisiyla gozlem normalizasyonu, yan/aynalama, rol esleme, auto-reset ve gol farki hesabi egitim ile eval'de ayni.
+Not: deterministik eylem (ortalama + argmax) stokastikten kotu (kolay: -1.09 vs +0.54): degerlendirmede iki mod ayri raporlanmali; yukaridaki 'MAPPO deepsets' degerlendirme tablosu deterministiktir. Bundan sonra egitim gunlugunde `eval_gd` sutunu her 400 guncellemede eval.py ile ayni kod yolundan (20 mac, stokastik) yazilir (`--eval-every`).
+Onceki 'bosta tabani daha iyi' yorumu yalniz deterministik tablo icin gecerlidir: stokastik politika kolay'a karsi pozitif gol farki veriyor (+0.54 [+0.18, +0.90], G/B/M 50/21/29), yani kolay seviyesi YENILIYOR; orta ve zor yenilmiyor.
+
+## Bağımsız doğrulama (koordinatör, tohum 4242, doğru rakip adları, stokastik, 100 maç)
+
+Aynı kontrol noktası (`rl/runs/m1a/ckpt.pt`), `rl/runs/m1a/eval_stoch_verify.json`:
+
+| Rakip | Gol farkı [%95 GA] | G/B/M (%) | atılan / yenen |
+|---|---|---|---|
+| kolay | +0,01 [−0,29; +0,31] | 38/23/39 | 2,90 / 2,89 |
+| orta | −1,13 [−1,46; −0,78] | 17/19/64 | 2,45 / 3,58 |
+| zor | −1,78 [−2,09; −1,47] | 8/10/82 | 2,14 / 3,92 |
+
+Not 1: Önceki tutarsızlığın (eğitimde +0,3, değerlendirmede −1,0) nedeni değerlendirme komutunda rakip adlarının önekli (`heuristic:kolay`) verilmemesiydi; ortam bilinmeyen adı sessizce `orta`ya düşürüyordu (artık hata veriyor). Eğitim ve değerlendirme yolu parite testinde uyuşuyor (`rl/tests/train_eval_parity.py`).
+
+Not 2: Kolay rakibe karşı iki bağımsız tohum seti farklı nokta tahmini veriyor (+0,54 ve +0,01). Güven aralıkları örtüşüyor; doğru okuma "kolay rakibe karşı kabaca başa baş, ≈ +0,3 civarı", "kolayı yendi" değildir. Orta ve zor rakipler net yeniyor. Bu tek tohumlu (eğitim tohumu 1), 5M adımlık bir sanity koşusudur; yayın sonucu değildir.

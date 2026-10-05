@@ -58,7 +58,12 @@ export class FootballEnv {
     this.weights = { ...DEFAULT_WEIGHTS, ...c.weights }
     this.skip = Math.max(1, Math.round(60 / c.decisionHz))
     const spec = [c.team0, c.opponent]
-    this.mode = spec.map((s) => (s === 'external' ? { ext: true } : { ext: false, level: s.split(':')[1] ?? 'orta' }))
+    this.mode = spec.map((s) => {
+      if (s === 'external') return { ext: true }
+      const level = String(s).replace(/^heuristic:/, '')
+      if (!['kolay', 'orta', 'zor'].includes(level)) throw new Error(`gecersiz rakip/takim tanimi '${s}': 'external' | 'heuristic:kolay|orta|zor' (ya da kolay|orta|zor)`)
+      return { ext: false, level }
+    })
     this.agents = [] // id listesi (dis takimlar, takim sirasi + rol sirasi)
     for (let tm = 0; tm < 2; tm++) if (this.mode[tm].ext) for (let r = 0; r < TEAM_SIZE; r++) this.agents.push(tm * TEAM_SIZE + r)
     this.nAg = this.agents.length

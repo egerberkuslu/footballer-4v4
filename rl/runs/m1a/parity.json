@@ -1,0 +1,17 @@
+{
+ "ckpt": "rl/runs/m1a/ckpt.pt",
+ "opponent": "heuristic:kolay",
+ "episodes": 100,
+ "train_path_gd": 0.17,
+ "train_path_obs_norm_mean": -0.0012753872433677316,
+ "train_path_obs_norm_std": 1.014644742012024,
+ "eval_path": {
+  "goal_diff_mean": 0.49,
+  "goal_diff_ci95": [
+   0.15,
+   0.84
+  ],
+  "gf_mean": 3.21,
+  "ga_mean": 2.72
+ }
+}

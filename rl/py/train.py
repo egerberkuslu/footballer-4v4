@@ -14,6 +14,7 @@ import torch
 
 from mappo import PPO, DEFAULT_W, TERMS, PPOCfg
 from models import ActorCritic
+from eval import Policy, evaluate
 from vec_env import VecEnv
 
 
@@ -43,6 +44,8 @@ def main():
     p.add_argument("--episode-sec", type=float, default=120)
     p.add_argument("--out", required=True)
     p.add_argument("--resume", action="store_true")
+    p.add_argument("--eval-every", type=int, default=400, help="N guncellemede eval.py ile AYNI kod yolundan degerlendirme (0: kapali)")
+    p.add_argument("--eval-matches", type=int, default=20)
     p.add_argument("--ckpt-every", type=int, default=50)
     p.add_argument("--wandb", default="offline", choices=["off", "offline", "online"])
     a = p.parse_args()
@@ -68,7 +71,7 @@ def main():
             wb = wandb.init(project="footballer-rl", config=meta, dir=a.out, mode=a.wandb)
         except Exception as e:
             print("wandb yok:", e)
-    cols = ["iter", "steps", "sps", "ep_n", "ep_ret", "goal_diff", "ep_len", *[f"term_{t}" for t in TERMS], "pg", "vf", "ent_c", "ent_s", "ent_d", "kl", "clipfrac", "lr", "gpu_util", "gpu_mem_mb", "wall_s"]
+    cols = ["iter", "steps", "sps", "ep_n", "ep_ret", "goal_diff", "ep_len", *[f"term_{t}" for t in TERMS], "pg", "vf", "ent_c", "ent_s", "ent_d", "kl", "clipfrac", "lr", "gpu_util", "gpu_mem_mb", "wall_s", "eval_gd", "eval_gf", "eval_ga"]
     csv_path = os.path.join(a.out, "log.csv")
     new = not os.path.exists(csv_path) or not a.resume
     f = open(csv_path, "w" if new else "a", newline="")
@@ -94,6 +97,14 @@ def main():
             ret = gd = ln = float("nan"); tm = np.full(len(TERMS), np.nan)
         gu, gm = gpu_util() if ppo.iteration % 10 == 1 else (float("nan"), float("nan"))
         row = [ppo.iteration, ppo.total_steps, round(sps, 1), len(ds), ret, gd, ln, *tm.tolist(), st["pg"], st["vf"], st["ent_c"], st["ent_s"], st["ent_d"], st["kl"], st["clipfrac"], ppo.opt.param_groups[0]["lr"], gu, gm, round(now - t0, 1)]
+        eg = [float("nan")] * 3
+        if a.eval_every and ppo.iteration % a.eval_every == 0:
+            model.eval()
+            r = evaluate(Policy("mem", dev=dev, stochastic=True, model=model, onorm=ppo.onorm), a.opponent, a.eval_matches, 4, 900000 + ppo.iteration, a.episode_sec)
+            model.train()
+            eg = [r["goal_diff_mean"], r["gf_mean"], r["ga_mean"]]
+            print(f"  eval({a.eval_matches} mac, stokastik): gd {eg[0]:+.2f} gf {eg[1]:.2f} ga {eg[2]:.2f} | egitim gd {gd:.2f}", flush=True)
+        row += eg
         w.writerow(row)
         f.flush()
         if wb:
