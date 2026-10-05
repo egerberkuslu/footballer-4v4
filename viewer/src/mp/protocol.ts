@@ -111,7 +111,7 @@ export type HostMsg =
 // ---------------------------------------------------------------- snapshot
 export const ANIMS: AnimState[] = [
   'idle', 'jog', 'run', 'sprint', 'dribble', 'kick', 'pass', 'tackle', 'slide', 'fall', 'getup',
-  'celebrate', 'throwin', 'keeper-dive-l', 'keeper-dive-r', 'keeper-catch', 'header',
+  'celebrate', 'throwin', 'keeper-dive-l', 'keeper-dive-r', 'keeper-catch', 'header', 'rabona',
 ]
 export const REF_ANIMS: RefAnim[] = [
   'idle', 'jog', 'run', 'whistle', 'point', 'card-yellow', 'card-red', 'advantage', 'var-listen', 'var-monitor', 'var-signal',

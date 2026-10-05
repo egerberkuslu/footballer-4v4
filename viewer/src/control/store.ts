@@ -37,6 +37,7 @@ export const ctl = {
   flightT: 0,
   // ?mode=mac ile macta baslar (Node testlerinde location yok)
   mode: (URL_MAC ? 'mac' : 'antrenman') as PlayMode,
+  practice: false, // serbest antrenman: mac modu, kurallar kapali (control/practice.ts)
   cam: (URL_MAC ? 'yayin' : 'sutcu') as CamMode,
   dragging: false, // top fareyle suruklenuyor
   follow: true,

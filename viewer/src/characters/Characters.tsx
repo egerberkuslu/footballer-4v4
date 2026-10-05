@@ -10,6 +10,7 @@ import { ClothSystem, clothOn } from '../cloth'
 import { diveOf, diveState, diveClock } from '../sim/keeperDive'
 import { footTiming } from '../anim/events'
 import { RigDriver } from '../anim/rig'
+import { installBadge, runLayers } from '../anim/layers'
 import { game } from '../game/store'
 import { world } from '../sim'
 import { isKitAtlas, KitMaterials, numberGeometry, numberMaterial, slotOf, type KitId } from './kit'
@@ -28,6 +29,8 @@ export const VARIANTS = [
   { url: asset('futbolcu_v4.glb'), lod: asset('futbolcu_v4_lod1.glb'), scale: 1 }, // kivircik kaleci
 ]
 // oyuncu sirasina gore gorunum (takimlarda ve kalecilerde cesitlilik); hakem 1
+installBadge()
+
 const VARIANT_OF = [0, 1, 2, 1, 2, 0, 2, 1]
 const REF_VARIANT = 1
 const LOD_FAR = 21
@@ -120,6 +123,7 @@ export interface Char {
   variant: number
   rig: RigDriver
   anim: Animator
+  layers: Record<string, unknown>
   x: number
   z: number
   f: number
@@ -235,7 +239,7 @@ export function makeChar(src: Source, kits: KitMaterials, kit: KitId, number: nu
   })
   const ch: Char = {
     root, rig, kit, lod0, lod1: [], lod: 0, ax: 0, az: 0, ball: { x: 0, y: 0, z: 0 }, shoulder: 'shoulder-l', variant: src.variant,
-    anim: new Animator(rig.dims), x: 0, z: 0, f: 0, vx: 0, vz: 0, init: false,
+    anim: new Animator(rig.dims), layers: {}, x: 0, z: 0, f: 0, vx: 0, vz: 0, init: false,
   }
   const hand = rig.bone('hand_r')
   const hr = rig.restModel('hand_r')
@@ -503,6 +507,7 @@ function CharacterSet({ srcs }: { srcs: Source[] }) {
       }
       const pose = c.anim.update(anim, animT, lvx, lvz, lax, laz, gdt, ballT, hasBall, diveHy)
       c.rig.apply(pose)
+      runLayers({ rig: c.rig, anim: c.anim, st: c.layers, id, name: anim, animT, hasBall, lvx, lvz, gdt, ball: ballT })
       c.root.position.set(c.x, 0, c.z)
       c.root.rotation.y = c.f
       // LOD: kameraya uzaklik (histerezisli)

@@ -34,3 +34,9 @@ human/tex/
 human/preview_*.png
 futbolcu_on.png
 futbolcu_arka.png
+# ham animasyon kaynaklari git disi; derleme betikleri ve ajan brifi izlenir
+anim_src/*
+!anim_src/*.py
+!anim_src/AJAN_BRIEF.md
+anim_src/*.bak*
+anim_src/__pycache__/

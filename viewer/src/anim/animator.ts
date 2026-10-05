@@ -43,7 +43,24 @@ export class Animator {
 
   /** her ayagin salinim sonuna kalan sure (s): 0 sol, 1 sag */
   contactIn(leg: 0 | 1): number {
+    // harici adim fazi (lokomosyon klip katmani) tazeyse ondan: klibin ayak inisine kalan sure
+    if (this.extAge < 0.12) return this.extIn[leg]
     return (1 - this.gaitSt.u[leg]) / Math.max(0.1, this.gaitSt.f)
+  }
+
+  // harici adim fazi (lokomosyon ajani): klip katmani her kare her ayagin bir sonraki inisine kalan sureyi yazar
+  private extIn: [number, number] = [9, 9]
+  private extAge = 9
+  /** klip katmani: sol/sag ayagin bir sonraki inisine kalan sure (s). Yazilmazsa ~0.12 s sonra parametrik zamanlamaya doner. */
+  setExternalContact(l: number, r: number) {
+    this.extIn[0] = l
+    this.extIn[1] = r
+    this.extAge = 0
+  }
+
+  /** parametrik adim fazi (0..1; 0 = sol ayak basar) */
+  get gaitPhase() {
+    return this.gaitSt.phase
   }
 
   /** test: adim fazini sabitle */
@@ -92,10 +109,11 @@ export class Animator {
       this.ownT = 0
     }
     this.ownT += dt
+    this.extAge += dt
     const t = animT > 0 ? animT : this.ownT
 
     const wantDr = anim === 'dribble' ? 1 : 0
-    this.gaitSt.shuffle += ((anim === 'jockey' ? 1 : 0) - this.gaitSt.shuffle) * Math.min(1, dt * 8)
+    this.gaitSt.shuffle += ((anim === 'jockey' || anim.startsWith('keeper-shuffle') ? 1 : 0) - this.gaitSt.shuffle) * Math.min(1, dt * 8)
     this.dribble += (wantDr - this.dribble) * Math.min(1, dt * 6)
     const k = Math.min(1, dt * 5)
     this.gaitSt.ax += (ax - this.gaitSt.ax) * k

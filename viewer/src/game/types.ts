@@ -11,6 +11,7 @@ export type AnimState =
   | 'sprint'
   | 'dribble'
   | 'kick'
+  | 'rabona' // arapas: vuran sag bacak destek bacaginin ARKASINDAN dolanir (sut/pas/lob; fizik ayni)
   | 'pass'
   | 'tackle' // ayakta mudahale
   | 'slide' // kayarak mudahale
@@ -71,6 +72,7 @@ export interface PlayerInput {
     power: number // 0..1
     aim: Vec3 // dunya hedef noktasi
     spin?: Vec3 // istege bagli acisal hiz (falso)
+    style?: 'rabona' | 'through' | 'driven' // yalniz animasyon secimi (top hizi/yonu ayni)
   }
 }
 

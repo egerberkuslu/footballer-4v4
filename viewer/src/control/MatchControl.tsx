@@ -27,6 +27,7 @@ const HL = PITCH_L / 2
 
 const keys = new Set<string>()
 let lobMod = false
+let rabonaMod = false // B basili (ya da kol L3): pas/sut/lob arapas (rabona) animasyonuyla
 const JOCKEY_HOLD_MS = 180 // E bu sureden uzun basiliysa jockey, kisa dokunus mudahale
 let eDown = 0
 // FIFA duzeni: pas/sut ek bilgisi (guc, sert pas, ara pas, ozel falsolu sut); aksiyon olusurken tuketilir
@@ -108,7 +109,14 @@ function nearestToBall(team: number, exclude = -1): Player | undefined {
 }
 
 /** pas hedefi: dir yonunde en uygun takim arkadasi (onunu karsilar), yoksa 12 m ileri nokta */
-function passTarget(p: Player, dx: number, dz: number) {
+/**
+ * Pas hedefi. explicit = oyuncu yon verdi (fare / cubuk): o yone yakin, acik (yolunda rakip olmayan) takim arkadasi;
+ * koni disina ceza ama arkaya vermez, kimse yoksa o yone 12 m. explicit degilse (cubuk notr): FIFA gibi en uygun
+ * takim arkadasi (hucuma yakin, acik, cok yakin ya da cok uzak olmayan); bakis yonune BAKILMAZ.
+ */
+function passTarget(p: Player, dx: number, dz: number, explicit = true) {
+  const goalDir = game.match.attackDir[p.team]
+  const opps = game.players.filter((q) => q.team !== p.team && !q.sentOff)
   let best: Player | null = null
   let bs = -Infinity
   for (const q of game.players) {
@@ -118,14 +126,25 @@ function passTarget(p: Player, dx: number, dz: number) {
     const d = Math.hypot(rx, rz)
     if (d < 1.5 || d > 32) continue
     const c = (rx * dx + rz * dz) / d
-    if (c < 0.35) continue
-    const s = c * 2 - d * 0.03
+    if (explicit && c < 0) continue // yon verildiyse arkaya verme
+    // acik mi: pas dogrusunun uzerindeki en yakin rakibe uzaklik (yolun disindakiler sayilmaz)
+    let open = 6
+    for (const o of opps) {
+      const t = ((o.x - p.x) * rx + (o.z - p.z) * rz) / (d * d)
+      if (t < 0 || t > 1) continue
+      open = Math.min(open, Math.hypot(o.x - (p.x + rx * t), o.z - (p.z + rz * t)))
+    }
+    const o6 = Math.min(open, 6)
+    const block = open < 1.5 ? (1.5 - open) * 1.2 : 0 // yolda rakip varsa guclu ceza (kesilecek pas)
+    let s: number
+    if (explicit) s = c * 2 + o6 * 0.12 - d * 0.03 - (c < 0.35 ? 1 : 0) - block
+    else s = (rx * goalDir) / d * 0.8 + o6 * 0.25 - d * 0.05 - (d < 4 ? 0.6 : 0) - block
     if (s > bs) {
       bs = s
       best = q
     }
   }
-  if (!best) return { x: p.x + dx * 12, y: 0, z: p.z + dz * 12 }
+  if (!best) return explicit ? { x: p.x + dx * 12, y: 0, z: p.z + dz * 12 } : { x: p.x + goalDir * 12, y: 0, z: p.z }
   const t = Math.hypot(best.x - p.x, best.z - p.z) / 13
   return { x: best.x + best.vx * t, y: 0, z: best.z + best.vz * t }
 }
@@ -139,7 +158,7 @@ export function MatchControl() {
   useEffect(() => {
     // test/ayiklama
     installRumble()
-    Object.assign(window, { __loco: { game, stepLocomotion, setControlled, ctl } })
+    Object.assign(window, { __loco: { game, stepLocomotion, setControlled, ctl, passTarget } })
   }, [])
 
   useEffect(() => {
@@ -173,13 +192,14 @@ export function MatchControl() {
       if (!active() || e.key === 'F3' || e.key === '`') return
       const k = e.key.toLowerCase()
       if (k === 'z') lobMod = true
+      if (k === 'b') rabonaMod = true
       if (e.key === ',' || e.key === '.') {
         e.preventDefault()
         setCurl(ctl.curl + (e.key === ',' ? -1 : 1))
         return
       }
       // oyun tuslari tarayiciya gitmesin
-      if (['w', 'a', 's', 'd', 'q', 'e', 'k', 'z', 'shift', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) e.preventDefault()
+      if (['w', 'a', 's', 'd', 'q', 'e', 'k', 'z', 'b', 'shift', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) e.preventDefault()
       keys.add(k)
       if (e.repeat) return
       if (k === 'q' && lockedPlayer() < 0) {
@@ -214,6 +234,7 @@ export function MatchControl() {
       const k = e.key.toLowerCase()
       keys.delete(k)
       if (k === 'z') lobMod = false
+      if (k === 'b') rabonaMod = false
       if (k === 'e' && eDown > 0) {
         if (performance.now() - eDown < JOCKEY_HOLD_MS && active()) pending.current = 'tackle'
         eDown = 0
@@ -224,6 +245,7 @@ export function MatchControl() {
       eDown = 0
       keys.clear()
       lobMod = false
+      rabonaMod = false
       cancelCharge()
     }
     el.addEventListener('wheel', onWheel, { passive: false })
@@ -479,7 +501,9 @@ export function MatchControl() {
       dx = mx / ml
       dz = mz / ml
     }
+    const explicitDir = (m.valid && Math.hypot(m.x - p.x, m.z - p.z) > 1) || ml > 0.2 // oyuncu yon verdi mi (fare / cubuk)
     const b = world.ball
+    const rabona = rabonaMod || !!gp?.held.rabona // arapas: yalniz animasyon (top hatti ayni)
     if (want === 'shoot') {
       const c = queuedShot >= 0 ? queuedShot : takeCharge()
       queuedShot = -1
@@ -493,18 +517,19 @@ export function MatchControl() {
       // havadaki top: kafa vurusu
       if (b.y > 1.1 && Math.hypot(b.x - p.x, b.z - p.z) < 1.2) inp.action = { type: 'header', power: Math.min(1, c), aim }
       // Z + sut: asirtma (top kale cizgisinde, nisan noktasinin altina iner)
-      else if (lobMod) inp.action = { type: 'lob', power: 0, aim: { x: gx, y: 0, z: aim.z }, spin: { x: 0, y: (-ctl.curl / CURL_STEPS) * CURL_W, z: 0 } }
+      else if (lobMod) inp.action = { type: 'lob', power: 0, aim: { x: gx, y: 0, z: aim.z }, spin: { x: 0, y: (-ctl.curl / CURL_STEPS) * CURL_W, z: 0 }, style: rabona ? 'rabona' : undefined }
       else {
         // R1+sut: ozel falsolu sut (otomatik kivrim); aksi halde elle falso
         const curlEff = padExtra.finesse ? finesseCurl(b.x, b.z, game.match.attackDir[team], aim.y, aim.z, V_MIN + (V_MAX - V_MIN) * Math.min(1, c)) : ctl.curl
-        inp.action = { type: 'shoot', power: Math.min(1, c), aim, spin: { x: 0, y: (-curlEff / CURL_STEPS) * CURL_W, z: 0 } }
+        inp.action = { type: 'shoot', power: Math.min(1, c), aim, spin: { x: 0, y: (-curlEff / CURL_STEPS) * CURL_W, z: 0 }, style: rabona ? 'rabona' : undefined }
         padExtra = { power: 0, driven: false, through: false, finesse: false }
       }
       ctl.lastKmh = Math.round((8 + 26 * Math.min(1, c)) * 3.6)
       bumpCtl()
     } else if (want === 'pass' || want === 'lob') {
-      let paim = passTarget(p, dx, dz)
+      let paim = passTarget(p, dx, dz, explicitDir)
       let ppow = 0
+      const pstyle = rabona ? 'rabona' : want === 'pass' && padExtra.through ? 'through' : want === 'pass' && padExtra.driven ? 'driven' : undefined
       if (want === 'pass') {
         if (padExtra.through) paim = throughTarget(p, dx, dz, ml > 0.2) ?? paim
         if (padExtra.power > 0) ppow = padExtra.power
@@ -515,7 +540,7 @@ export function MatchControl() {
         }
       }
       padExtra = { power: 0, driven: false, through: false, finesse: false }
-      inp.action = { type: want, power: ppow, aim: paim, spin: { x: 0, y: (-ctl.curl / CURL_STEPS) * CURL_W, z: 0 } }
+      inp.action = { type: want, power: ppow, aim: paim, spin: { x: 0, y: (-ctl.curl / CURL_STEPS) * CURL_W, z: 0 }, style: pstyle }
     } else {
       // mudahale: top yakinsa topa dogru
       const db = Math.hypot(b.x - p.x, b.z - p.z)

@@ -156,6 +156,7 @@ const CONTROLS: [string, string, string][] = [
   ['Şut (basılı tut)', 'Sol tık / Boşluk', '○'],
   ['Pas', 'Sağ tık / K', '✕'],
   ['Aşırtma', 'Z + pas / şut', '□'],
+  ['Arapas (rabona)', 'B + pas / şut / Z+pas', 'L3 + ✕ / ○ / □'],
   ['Müdahale / kayarak', 'E / Shift+E', 'R1'],
   ['Oyuncu değiştir', 'Q', '△'],
   ['Kamera', 'C / V', 'Share'],
@@ -258,7 +259,8 @@ export function MainMenu() {
   const ITEMS: Item[] = [
     { id: 'solo', label: 'Tek Oyunculu Maç', sub: 'Yapay zekâya karşı 4\'e 4', go: () => withCurtain(() => playSolo('mac'), 'Maç hazırlanıyor'), panel: 'play' },
     { id: 'mp', label: 'Çok Oyunculu', sub: 'Oda kur ya da odaya katıl', go: () => setScreen('mp'), panel: 'play' },
-    { id: 'train', label: 'Antrenman', sub: 'Serbest şut çalışması', go: () => withCurtain(() => playSolo('antrenman'), 'Antrenman hazırlanıyor'), panel: 'play' },
+    { id: 'free', label: 'Serbest Antrenman', sub: 'Topla dolaş, kalede kaleci, hareketleri dene', go: () => withCurtain(() => playSolo('serbest'), 'Antrenman hazırlanıyor'), panel: 'play' },
+    { id: 'train', label: 'Şut Antrenmanı', sub: 'Serbest şut çalışması', go: () => withCurtain(() => playSolo('antrenman'), 'Antrenman hazırlanıyor'), panel: 'play' },
     { id: 'pad', label: 'Kol Ayarları', sub: 'Eşleme, ölü bölge, titreşim', go: () => openGamepadSettings(), panel: 'play' },
     { id: 'ctl', label: 'Kontroller', sub: 'Klavye ve kol düzeni', go: () => {}, panel: 'controls' },
     { id: 'set', label: 'Ayarlar', sub: 'Zorluk, gün saati, kalite', go: () => {}, panel: 'settings' },

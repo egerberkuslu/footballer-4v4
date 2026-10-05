@@ -9,6 +9,7 @@ export type ActionId =
   | 'through'
   | 'driven'
   | 'finesse'
+  | 'rabona'
   | 'shield'
   | 'tackle'
   | 'slide'
@@ -72,6 +73,7 @@ export const ACTIONS: ActionDef[] = [
   A('through', 'Ara pas', 'topla', 'triangle', null),
   A('driven', 'Sert pas (pas ile)', 'topla', 'l1', null),
   A('finesse', 'Falsolu şut (şut ile)', 'topla', 'r1', null),
+  A('rabona', 'Arapas / rabona (basılı tut + pas/şut/orta)', 'topla', 'l3', 'l3'),
   A('shield', 'Top koruma', 'topla', 'l2', null),
   // topsuz
   A('tackle', 'Müdahale', 'topsuz', 'square', 'r1'),

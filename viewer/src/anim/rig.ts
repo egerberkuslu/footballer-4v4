@@ -52,6 +52,9 @@ const v5 = new THREE.Vector3()
 const qb = new THREE.Quaternion()
 const qA = new THREE.Quaternion()
 const qF = new THREE.Quaternion()
+// reachHand tamponlari (kaleci ajani)
+const [rhS, rhE, rhH, rhT, rhA, rhB, rhC, rhD] = Array.from({ length: 8 }, () => new THREE.Vector3())
+const [rhQ1, rhQ2, rhQ3] = Array.from({ length: 3 }, () => new THREE.Quaternion())
 
 function basisFast(p: THREE.Vector3, n: THREE.Vector3, out: THREE.Quaternion) {
   v5.copy(n).addScaledVector(p, -p.dot(n))
@@ -172,6 +175,160 @@ export class RigDriver {
 
   restModel(name: string) {
     return this.b[name]
+  }
+
+  /**
+   * klip katmani: kemik model yonelimi = delta * dinlenme; w < 1 ise uygulanmis (parametrik) yonelimle karisir.
+   * Ebeveynden cocuga siralanarak cagrilmali (cocugun yerel donusu ebeveynin yeni yonelimine gore turetilir).
+   */
+  blendBone(name: string, delta: THREE.Quaternion, w: number) {
+    const rb = this.b[name]
+    if (!rb) return
+    tmpQ.multiplyQuaternions(delta, rb.q)
+    if (w < 1) {
+      tmpQ2.copy(rb.cur).slerp(tmpQ, w)
+      this.set(name, tmpQ2)
+    } else this.set(name, tmpQ)
+  }
+
+  /** FK: kemigin su anki model konumu (pelvisPos + ebeveyn zinciri; uygulanmis yonelimlerle) */
+  bonePos(name: string, out: THREE.Vector3): THREE.Vector3 {
+    const chain: string[] = []
+    let n: string | undefined = name
+    while (n && n !== 'pelvis' && this.b[n]) {
+      chain.push(n)
+      n = this.b[n].bone.parent?.name
+    }
+    out.copy(this.pelvisPos)
+    let par = this.b.pelvis
+    if (!par) return out
+    for (let i = chain.length - 1; i >= 0; i--) {
+      const c = this.b[chain[i]]
+      tmpQ.copy(par.cur).multiply(tmpQ2.copy(par.q).invert())
+      out.add(v1.copy(c.p).sub(par.p).applyQuaternion(tmpQ))
+      par = c
+    }
+    return out
+  }
+
+  /**
+   * iki kemikli IK: ayak bilegini hedefe (model uzayi) w kadar yaklastirir (kalca sabit, diz yonu korunur).
+   * Klip katmani: mocap topuyla oyundaki top ayni yerde olmadigi icin temas civarinda vuran ayak topa cekilir.
+   */
+  reachFoot(side: 'l' | 'r', target: THREE.Vector3, w: number) {
+    const th = this.b[`thigh_${side}`]
+    const ca = this.b[`calf_${side}`]
+    const ft = this.b[`foot_${side}`]
+    if (!th || !ca || !ft || w <= 0.001) return
+    const H = this.bonePos(`thigh_${side}`, new THREE.Vector3())
+    const K = this.bonePos(`calf_${side}`, new THREE.Vector3())
+    const A = this.bonePos(`foot_${side}`, new THREE.Vector3())
+    const l1 = K.distanceTo(H)
+    const l2 = A.distanceTo(K)
+    const T = A.clone().lerp(target, Math.min(1, w))
+    const d = T.sub(H)
+    const dist = Math.min(l1 + l2 - 1e-4, Math.max(Math.abs(l1 - l2) + 1e-3, d.length()))
+    const dir = d.normalize()
+    const a = (l1 * l1 - l2 * l2 + dist * dist) / (2 * dist)
+    const h = Math.sqrt(Math.max(0, l1 * l1 - a * a))
+    const kh = K.clone().sub(H)
+    const kp = kh.clone().addScaledVector(dir, -kh.dot(dir))
+    if (kp.lengthSq() < 1e-8) kp.set(0, 0, 1).addScaledVector(dir, -dir.z)
+    kp.normalize()
+    const K2 = H.clone().addScaledVector(dir, a).addScaledVector(kp, h)
+    const A2 = H.clone().addScaledVector(dir, dist)
+    const q1 = new THREE.Quaternion().setFromUnitVectors(kh.clone().normalize(), K2.clone().sub(H).normalize())
+    const dc = A.clone().sub(K).applyQuaternion(q1).normalize()
+    const q2 = new THREE.Quaternion().setFromUnitVectors(dc, A2.clone().sub(K2).normalize())
+    const footQ = ft.cur.clone()
+    this.set(`thigh_${side}`, q1.clone().multiply(th.cur))
+    this.set(`calf_${side}`, q2.multiply(q1).multiply(ca.cur))
+    this.set(`foot_${side}`, footQ)
+  }
+
+  /** klip katmani: pelvis konumu = dinlenme + (dx, dy, dz) metre (model uzayi, y yukari); w ile karisir */
+  blendPelvis(dx: number, dy: number, dz: number, w: number) {
+    const pel = this.b.pelvis
+    if (!pel) return
+    const u = this.u
+    this.pelvisPos.lerp(v1.set(pel.p.x + dx * u, pel.p.y + dy * u, pel.p.z + dz * u), w)
+    pel.bone.position.copy(this.pelvisPos).applyMatrix4(this.pelvisParentInv)
+  }
+
+  // --- kaleci ajani eklentileri (keeper katmani) ---
+  /** karakter uzayi (metre; x sol, y yukari, z ileri, koke gore) -> model uzayi */
+  localToModel(x: number, y: number, z: number, out: THREE.Vector3): THREE.Vector3 {
+    const u = this.u
+    return out.set(this.origin.x + x * u, this.origin.y + y * u, this.origin.z + z * u)
+  }
+
+  /** pelvisin bu karedeki dinlenmeden sapmasi (metre, model uzayi, y yukari) */
+  pelvisOffset(out: THREE.Vector3): THREE.Vector3 {
+    const pel = this.b.pelvis
+    if (!pel) return out.set(0, 0, 0)
+    return out.copy(this.pelvisPos).sub(pel.p).divideScalar(this.u)
+  }
+
+  /**
+   * iki kemikli kol IK: bilegi hedefe (model uzayi) w kadar yaklastirir; omuz sabit, dirsek bukum duzlemi korunur,
+   * el onkolla birlikte doner. Klip katmani kol kemiklerini yazdiktan SONRA cagrilir.
+   */
+  reachHand(side: 'l' | 'r', target: THREE.Vector3, w: number) {
+    const ua = this.b[`upperarm_${side}`]
+    const la = this.b[`lowerarm_${side}`]
+    const hd = this.b[`hand_${side}`]
+    if (!ua || !la || !hd || w <= 0.001) return
+    const S = this.bonePos(`upperarm_${side}`, rhS)
+    const E = this.bonePos(`lowerarm_${side}`, rhE)
+    const H = this.bonePos(`hand_${side}`, rhH)
+    const l1 = E.distanceTo(S)
+    const l2 = H.distanceTo(E)
+    const T = rhT.copy(H).lerp(target, Math.min(1, w))
+    const d = T.sub(S)
+    const dist = Math.min(l1 + l2 - 1e-4, Math.max(Math.abs(l1 - l2) + 1e-3, d.length()))
+    const dir = d.normalize()
+    const a = (l1 * l1 - l2 * l2 + dist * dist) / (2 * dist)
+    const h = Math.sqrt(Math.max(0, l1 * l1 - a * a))
+    const es = rhA.copy(E).sub(S)
+    const ep = rhB.copy(es).addScaledVector(dir, -es.dot(dir))
+    if (ep.lengthSq() < 1e-8) ep.set(0, -1, 0).addScaledVector(dir, -dir.y)
+    ep.normalize()
+    const E2 = rhC.copy(S).addScaledVector(dir, a).addScaledVector(ep, h)
+    const H2 = rhD.copy(S).addScaledVector(dir, dist)
+    const q1 = rhQ1.setFromUnitVectors(es.normalize(), v1.copy(E2).sub(S).normalize())
+    const dc = v2.copy(H).sub(E).applyQuaternion(q1).normalize()
+    const q2 = rhQ2.setFromUnitVectors(dc, v3.copy(H2).sub(E2).normalize()).multiply(q1)
+    rhQ3.copy(q2).multiply(hd.cur)
+    this.set(`upperarm_${side}`, tmpQ2.copy(q1).multiply(ua.cur))
+    this.set(`lowerarm_${side}`, tmpQ2.copy(q2).multiply(la.cur))
+    this.set(`hand_${side}`, rhQ3)
+  }
+
+  // --- pas/kafa ajani eklemeleri (layers/pass*.ts) ---
+  // (localToModel kaleci ajani eklemesini kullanir)
+  private pq = new THREE.Quaternion()
+
+  /**
+   * kemigin bu karedeki model yonelimini q ile on-carpar (q * cur). Cocuklarin yerel donusu degismez, gorselde ebeveyni izler;
+   * cocugun cur degeri de guncel kalsin isteniyorsa (bonePos/reachFoot icin) ayni q cocuk icin de cagrilmali.
+   */
+  preRotate(name: string, q: THREE.Quaternion) {
+    const rb = this.b[name]
+    if (!rb) return
+    this.set(name, this.pq.multiplyQuaternions(q, rb.cur))
+  }
+
+  // --- lokomosyon ajani eklemeleri (layers/loco*.ts) ---
+  /**
+   * karakterin dunya sapma acisi (rad, atan2(ileri.x, ileri.z)): pelvis ebeveyninin SON CIZILEN karedeki matrixWorld'unden
+   * (bir kare gecikmeli). Donus hizi (egim) icin ardisik farki kullanilir.
+   */
+  worldYaw(): number {
+    const par = this.b.pelvis?.bone.parent
+    if (!par) return 0
+    const e = par.matrixWorld.elements
+    // model +z ekseninin dunyadaki yonu: 3. sutun
+    return Math.atan2(e[8], e[10])
   }
 
   /** kemigin bu karedeki model yonelimini ayarla, yerel donusu ebeveynden turet */

@@ -5,6 +5,8 @@ export const CLIP_LEN = {
   kickContact: 0.28,
   pass: 0.55,
   passContact: 0.22,
+  rabona: 0.75, // arapas: sutla ayni sure ve temas (fizik hatti ayni)
+  rabonaContact: 0.28,
   tackle: 0.7,
   tackleContact: 0.22,
   slide: 0.8, // sonra oturur kalir; kalkis 'getup' (1.0 s, oturustan)

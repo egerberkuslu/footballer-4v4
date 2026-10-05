@@ -2,6 +2,8 @@
 // UI (Lobby.tsx) mp durumunu useSyncExternalStore ile okur. Kare isi sync.ts'de.
 import type { DataConnection } from 'peerjs'
 import { setMode } from '../control/actions'
+import { resetPractice } from '../control/practice'
+import { ctl } from '../control/store'
 import { setControlled } from '../control/locomotion'
 import { setAiLevel } from '../ai/config'
 import { game } from '../game/store'
@@ -123,9 +125,15 @@ function clearRemote() {
 }
 
 // =================================================================== tek oyunculu kisayollar
-export function playSolo(mode: 'antrenman' | 'mac') {
+export function playSolo(mode: 'antrenman' | 'mac' | 'serbest') {
   leave()
-  setMode(mode)
+  ctl.practice = mode === 'serbest' // setMode'dan ONCE: Rules bileseni mount olunca maci baslatmasin
+  setMode(mode === 'serbest' ? 'mac' : mode)
+  if (mode === 'serbest') {
+    game.humanTeam = 0
+    for (const p of game.players) p.sentOff = false
+    resetPractice()
+  }
   if (mode === 'mac') {
     game.humanTeam = 0
     rules.start()
@@ -133,6 +141,10 @@ export function playSolo(mode: 'antrenman' | 'mac') {
   }
   setScreen('none')
 }
+
+if (import.meta.env.DEV) (globalThis as { __playSolo?: typeof playSolo }).__playSolo = playSolo // test kancasi (yalniz dev)
+// ?practice=1: dogrudan serbest antrenmana gir (menu atlanir)
+if (typeof location !== 'undefined' && new URLSearchParams(location.search).get('practice') === '1') setTimeout(() => playSolo('serbest'), 3500)
 
 // =================================================================== HOST
 interface Guest {

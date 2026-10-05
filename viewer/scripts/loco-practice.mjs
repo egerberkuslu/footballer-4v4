@@ -1,0 +1,12 @@
+// Lokomosyon ajani: ?practice=1 sayfasi yukleniyor mu, loco katmani calisiyor mu (hata yok)
+import { BASE, launch, waitReady } from './qa-lib.mjs'
+const { b, p, logs } = await launch({ w: 960, h: 540 })
+await p.goto(`${BASE}?practice=1&dbg=1`)
+console.log('hazir', await waitReady(p))
+await p.mouse.click(480, 400); await p.waitForTimeout(500)
+await p.keyboard.down('d'); await p.waitForTimeout(2500)
+await p.screenshot({ path: '/tmp/asci/loco/practice_run.png' })
+await p.keyboard.down('Shift'); await p.waitForTimeout(1500); await p.keyboard.up('Shift'); await p.keyboard.up('d'); await p.waitForTimeout(500)
+await p.screenshot({ path: '/tmp/asci/loco/practice.png' })
+console.log(JSON.stringify({ hata: logs.slice(0, 5) }), JSON.stringify(await p.evaluate(() => window.__layers.loco)))
+await b.close()

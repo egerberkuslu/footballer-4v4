@@ -42,6 +42,30 @@ function clips(): Record<string, Clip> {
         [0.75, { 'R.ik': 1, 'R.z': 0.32, 'R.x': -0.1, hy: -0.03 }],
       ],
     },
+    // --- arapas (rabona; rabona ajani): sol destek ayagi topun SAGINA basar, sag bacak destek bacaginin ARKASINDAN dolanip
+    // topa soldan-arkadan vurur. Temas CLIP_LEN.rabonaContact (0.28). Varsayilan top (0.02, 0.11, 0.38); layers/rabona.ts
+    // yolu gercek topa kaydirir. Govde destek ayagi uzerine saga kayar/yatar, kollar denge icin acik.
+    rabona: {
+      fadeIn: 0.06,
+      keys: [
+        [0, { hy: -0.03 }],
+        [0.12, { 'L.ik': 1, 'L.x': -0.2, 'L.z': 0.3, 'L.y': A, 'L.yaw': -0.15, 'R.ik': 1, 'R.x': -0.24, 'R.y': 0.3, 'R.z': -0.22, 'R.pitch': -0.5,
+          hx: -0.07, hz: 0.08, hy: -0.07, hyaw: -0.35, syaw: -0.15, hr: 0.08, sp: 0.1, np: 0.3, nyaw: 0.1,
+          'LA.abd': 1.1, 'LA.flex': 0.2, 'LA.elbow': 0.5, 'RA.abd': 0.95, 'RA.flex': -0.35, 'RA.elbow': 0.5 }],
+        [0.21, { 'L.ik': 1, 'L.x': -0.2, 'L.z': 0.3, 'L.y': A, 'L.yaw': -0.15, 'R.ik': 1, 'R.x': 0.07, 'R.y': 0.27, 'R.z': -0.02, 'R.pitch': -0.75, 'R.yaw': -0.5,
+          hx: -0.09, hz: 0.1, hy: -0.09, hyaw: -0.12, syaw: 0.05, hr: 0.16, sp: 0.16, np: 0.4, nyaw: 0.18,
+          'LA.abd': 1.25, 'LA.flex': 0.3, 'LA.elbow': 0.45, 'RA.abd': 1.05, 'RA.flex': -0.45, 'RA.elbow': 0.45 }],
+        [0.28, { 'L.ik': 1, 'L.x': -0.2, 'L.z': 0.3, 'L.y': A, 'L.yaw': -0.15, 'R.ik': 1, 'R.x': 0.03, 'R.y': 0.11, 'R.z': 0.27, 'R.pitch': -0.8, 'R.yaw': -0.45,
+          hx: -0.09, hz: 0.12, hy: -0.09, hyaw: 0.12, syaw: 0.12, hr: 0.18, sp: 0.18, np: 0.45, nyaw: 0.2,
+          'LA.abd': 1.2, 'LA.flex': 0.15, 'LA.elbow': 0.4, 'RA.abd': 1.0, 'RA.flex': -0.2, 'RA.elbow': 0.45 }],
+        [0.4, { 'L.ik': 1, 'L.x': -0.2, 'L.z': 0.3, 'L.y': A + 0.02, 'L.yaw': -0.15, 'R.ik': 1, 'R.x': -0.05, 'R.y': 0.33, 'R.z': 0.62, 'R.pitch': -0.4,
+          hx: -0.07, hz: 0.12, hy: -0.06, hyaw: 0.22, syaw: 0.15, hr: 0.1, sp: 0.08, np: 0.25, nyaw: 0.05,
+          'LA.abd': 0.9, 'LA.flex': -0.2, 'RA.abd': 0.7, 'RA.flex': 0.1 }],
+        [0.56, { 'L.ik': 1, 'L.x': -0.16, 'L.z': 0.22, 'L.y': A, 'R.ik': 1, 'R.x': -0.14, 'R.y': A + 0.04, 'R.z': 0.4,
+          hx: -0.03, hz: 0.08, hy: -0.04, hyaw: 0.08, hr: 0.03, sp: 0.04, np: 0.15, 'LA.abd': 0.45, 'RA.abd': 0.4 }],
+        [0.75, { 'R.ik': 1, 'R.z': 0.2, hy: -0.03 }],
+      ],
+    },
     // --- ayak ici pas: temas CLIP_LEN.passContact ---
     pass: {
       keys: [
@@ -401,11 +425,12 @@ function clips2(): Record<string, Clip> {
     'trap-foot': {
       fadeIn: 0.06,
       keys: [
-        [0, { ...PLANT(A, 0.13, -0.05), ...FK_R, hy: -0.07, np: 0.35, 'R.flex': 0.3, 'R.knee': 0.45, 'R.twist': 0.85, 'R.abd': 0.1,
-          'R.pitch': 0.1, 'LA.abd': 0.45, 'RA.abd': 0.35 }],
-        [0.15, { ...PLANT(A, 0.13, -0.05), ...FK_R, hy: -0.07, np: 0.35, 'R.flex': 0.1, 'R.knee': 0.35, 'R.twist': 0.8, 'R.abd': 0.08,
-          'R.pitch': 0.1, 'LA.abd': 0.4, 'RA.abd': 0.3 }],
-        [0.5, {}],
+        // temas animasyon basinda: ayak ici havada topa karsi, sonra geri cekilerek topu yumusatir (diz bukulur, govde one)
+        [0, { ...PLANT(A, 0.13, -0.05), ...FK_R, hy: -0.05, hp: 0.12, sp: 0.1, np: 0.4, 'R.flex': 0.45, 'R.knee': 0.6, 'R.twist': 0.9,
+          'R.abd': 0.12, 'R.pitch': 0.1, 'LA.abd': 0.55, 'LA.elbow': 0.4, 'RA.abd': 0.45, 'RA.elbow': 0.4 }],
+        [0.14, { ...PLANT(A, 0.13, -0.05), ...FK_R, hy: -0.06, hp: 0.15, sp: 0.12, np: 0.4, 'R.flex': 0.12, 'R.knee': 0.6, 'R.twist': 0.8,
+          'R.abd': 0.08, 'R.pitch': 0.15, 'LA.abd': 0.45, 'LA.elbow': 0.35, 'RA.abd': 0.35, 'RA.elbow': 0.35 }],
+        [0.4, {}],
       ],
     },
     'trap-thigh': {

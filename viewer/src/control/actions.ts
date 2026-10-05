@@ -150,6 +150,7 @@ export const aimInside = () => Math.abs(ctl.aimZ) < GOAL_W / 2 - 0.11 && ctl.aim
 export function setMode(m: PlayMode) {
   if (ctl.mode === m) return
   cancelCharge()
+  if (m !== 'mac') ctl.practice = false
   ctl.mode = m
   ctl.inFlight = false
   ctl.runT = -1

@@ -6,6 +6,8 @@ import { game } from '../game/store'
 import { world } from '../sim'
 import { sfx } from './audio'
 import { currentRules } from './instance'
+import { ctl } from '../control/store'
+import { practiceFrame, practiceOff } from '../control/practice'
 
 const realDt = (dt: number) => Math.min(dt, 1 / 30)
 // duran top zamanlayicilari ve VAR hakemi icin gercek zaman (yavas karede de kilit kalmasin)
@@ -15,13 +17,21 @@ const wallDt = (dt: number) => Math.min(dt, 0.25)
 let mounted = 0
 
 export function Rules() {
-  useFrame((_, dt) => currentRules().pre(realDt(dt) * world.timeScale, wallDt(dt)), -20)
-  useFrame((_, dt) => currentRules().post(realDt(dt) * world.timeScale, wallDt(dt)), -0.5)
+  useFrame((_, dt) => {
+    if (!ctl.practice) currentRules().pre(realDt(dt) * world.timeScale, wallDt(dt))
+  }, -20)
+  useFrame((_, dt) => {
+    if (ctl.practice) practiceFrame(realDt(dt) * world.timeScale)
+    else {
+      practiceOff()
+      currentRules().post(realDt(dt) * world.timeScale, wallDt(dt))
+    }
+  }, -0.5)
 
   useEffect(() => {
     mounted++
     const r = currentRules()
-    if (!r.started) r.start()
+    if (!r.started && !ctl.practice) r.start()
     sfx.arm()
     const off = game.on((e) => {
       switch (e.type) {

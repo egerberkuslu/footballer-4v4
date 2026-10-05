@@ -45,7 +45,7 @@ function Driver() {
         // at<0: canli oynat (dongu)
         p.animT = at >= 0 ? Math.max(1e-3, at) : 1e-3 + (time % 2.2)
       }
-      if ('hasBall' in p) p.hasBall = false
+      if ('hasBall' in p) p.hasBall = q.get('ball') === '1'
       if ('controlled' in p) p.controlled = i === 0
     })
     cz /= all.length

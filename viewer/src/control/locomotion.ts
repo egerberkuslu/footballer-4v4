@@ -6,6 +6,7 @@ import { BALL_R, PITCH_L, PITCH_W } from '../pitch'
 import { world, type DynCollider } from '../sim'
 import { G, freeStep, newBall } from '../sim/ball'
 import { CLIP_LEN } from '../anim/timing'
+import { actionStyle } from '../anim/actionStyle'
 import { DOWN_T, clearAllDives, diveClock, diveOf, diveState, keeperTune, planDive, saveProb } from '../sim/keeperDive'
 import { footTiming } from '../anim/events'
 import { CURL_W, solveShot } from './aim'
@@ -83,6 +84,7 @@ interface Act {
   aim: Vec3
   power: number
   spin?: Vec3
+  style?: 'rabona' | 'through' | 'driven'
   done: boolean
   dx: number // aksiyon yonu (birim)
   dz: number
@@ -315,7 +317,12 @@ function startAction(p: Player, a: NonNullable<PlayerInput['action']>) {
         break
       }
       plant()
-      setAnim(p, a.type === 'pass' ? 'pass' : 'kick')
+      {
+        // yalniz animasyon secimi (rabona ajani): top hizi/yonu asagida runAction'da AYNI hattan cozulur
+        const lobPass = a.type === 'lob' && Math.abs(a.aim.x) < HL - 1.5 // kale cizgisine degil: havadan pas
+        actionStyle[p.id] = a.style === 'rabona' ? 'rabona-' + a.type : a.type === 'shoot' ? 'shoot' : lobPass ? 'lob' : a.type === 'lob' ? 'shoot' : a.style ?? 'ground'
+        setAnim(p, a.style === 'rabona' ? 'rabona' : a.type === 'pass' || lobPass ? 'pass' : 'kick')
+      }
       p.actionLock = KICK_LOCK
       break
     case 'tackle':
@@ -433,7 +440,7 @@ function runAction(p: Player, act: Act, gdt: number) {
         break
       }
       // vurus ani animasyonla ayni (anim/timing.ts)
-      const at = act.type === 'pass' ? CLIP_LEN.passContact : CLIP_LEN.kickContact
+      const at = act.style === 'rabona' ? CLIP_LEN.rabonaContact : act.type === 'pass' ? CLIP_LEN.passContact : CLIP_LEN.kickContact
       if (act.done || act.t < at) break
       act.done = true
       // duran topta kullanan, sahiplik olmadan durgun topa vurur
