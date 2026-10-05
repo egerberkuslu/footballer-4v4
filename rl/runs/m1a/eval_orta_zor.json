@@ -1,0 +1,53 @@
+{
+ "policy": "ckpt",
+ "ckpt": "rl/runs/m1a/ckpt.pt",
+ "stochastic": false,
+ "results": [
+  {
+   "opponent": "heuristic:orta",
+   "n": 100,
+   "goal_diff_mean": -0.76,
+   "goal_diff_ci95": [
+    -1.13,
+    -0.41
+   ],
+   "gf_mean": 3.17,
+   "ga_mean": 3.93,
+   "win": 21,
+   "draw": 26,
+   "loss": 53,
+   "terms_mean": {
+    "goal": -0.76,
+    "ball_approach": -1.3353670984506607,
+    "ball_progress": -0.31733610594645145,
+    "pass_ok": 0.0,
+    "steal": 1.595,
+    "foul": -0.1325,
+    "card": -0.0025
+   }
+  },
+  {
+   "opponent": "heuristic:zor",
+   "n": 100,
+   "goal_diff_mean": -2.25,
+   "goal_diff_ci95": [
+    -2.6,
+    -1.9
+   ],
+   "gf_mean": 2.58,
+   "ga_mean": 4.83,
+   "win": 5,
+   "draw": 12,
+   "loss": 83,
+   "terms_mean": {
+    "goal": -2.25,
+    "ball_approach": -1.261532717049122,
+    "ball_progress": -0.9956856483686716,
+    "pass_ok": 0.0,
+    "steal": 1.6125,
+    "foul": -0.115,
+    "card": -0.005
+   }
+  }
+ ]
+}

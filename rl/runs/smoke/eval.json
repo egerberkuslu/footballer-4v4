@@ -1,0 +1,30 @@
+{
+ "policy": "ckpt",
+ "ckpt": "rl/runs/smoke/ckpt.pt",
+ "stochastic": false,
+ "results": [
+  {
+   "opponent": "heuristic:kolay",
+   "n": 8,
+   "goal_diff_mean": -0.75,
+   "goal_diff_ci95": [
+    -1.5,
+    -0.125
+   ],
+   "gf_mean": 2.125,
+   "ga_mean": 2.875,
+   "win": 0,
+   "draw": 4,
+   "loss": 4,
+   "terms_mean": {
+    "goal": -0.75,
+    "ball_approach": -1.1919574663043022,
+    "ball_progress": -0.38709973730146885,
+    "pass_ok": 0.0,
+    "steal": 0.53125,
+    "foul": 0.0,
+    "card": 0.0
+   }
+  }
+ ]
+}

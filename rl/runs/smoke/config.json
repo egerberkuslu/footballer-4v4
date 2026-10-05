@@ -1,0 +1,33 @@
+{
+ "args": {
+  "encoder": "deepsets",
+  "comm_radius": 10.0,
+  "rounds": 2,
+  "role_mode": "embed",
+  "critic": "mappo",
+  "opponent": "heuristic:kolay",
+  "seed": 1,
+  "steps": 200000,
+  "envs": 8,
+  "hid": 128,
+  "rollout": 128,
+  "lr": 0.0003,
+  "episode_sec": 120,
+  "out": "rl/runs/smoke",
+  "resume": false,
+  "ckpt_every": 50,
+  "wandb": "off"
+ },
+ "weights": {
+  "goal": 1.0,
+  "ball_approach": 0.02,
+  "ball_progress": 0.2,
+  "pass_ok": 0.05,
+  "steal": 0.05,
+  "foul": 0.1,
+  "card": 0.2
+ },
+ "obs_version": 1,
+ "torch": "2.13.0+cu130",
+ "device": "cuda"
+}

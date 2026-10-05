@@ -1,0 +1,76 @@
+{
+ "policy": "random",
+ "ckpt": null,
+ "stochastic": false,
+ "results": [
+  {
+   "opponent": "heuristic:kolay",
+   "n": 100,
+   "goal_diff_mean": -3.62,
+   "goal_diff_ci95": [
+    -3.99,
+    -3.27
+   ],
+   "gf_mean": 0.65,
+   "ga_mean": 4.27,
+   "win": 1,
+   "draw": 5,
+   "loss": 94,
+   "terms_mean": {
+    "goal": -3.62,
+    "ball_approach": -0.6869277283921837,
+    "ball_progress": -1.8106886626034975,
+    "pass_ok": 0.71,
+    "steal": 2.0075,
+    "foul": -0.9925,
+    "card": -1.1125
+   }
+  },
+  {
+   "opponent": "heuristic:orta",
+   "n": 100,
+   "goal_diff_mean": -4.51,
+   "goal_diff_ci95": [
+    -4.86,
+    -4.15
+   ],
+   "gf_mean": 0.61,
+   "ga_mean": 5.12,
+   "win": 0,
+   "draw": 0,
+   "loss": 100,
+   "terms_mean": {
+    "goal": -4.51,
+    "ball_approach": -0.7122568222624249,
+    "ball_progress": -2.2076898312568662,
+    "pass_ok": 0.725,
+    "steal": 1.9775,
+    "foul": -0.95,
+    "card": -1.1675
+   }
+  },
+  {
+   "opponent": "heuristic:zor",
+   "n": 100,
+   "goal_diff_mean": -5.41,
+   "goal_diff_ci95": [
+    -5.77,
+    -5.05
+   ],
+   "gf_mean": 0.43,
+   "ga_mean": 5.84,
+   "win": 0,
+   "draw": 0,
+   "loss": 100,
+   "terms_mean": {
+    "goal": -5.41,
+    "ball_approach": -0.6499702977761627,
+    "ball_progress": -2.6181417012214663,
+    "pass_ok": 0.7975,
+    "steal": 1.905,
+    "foul": -0.99,
+    "card": -1.1175
+   }
+  }
+ ]
+}
