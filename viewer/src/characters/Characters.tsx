@@ -21,7 +21,7 @@ import { passHints } from '../ai/brain'
 import { buildMannequin, MANNEQUIN_BACK } from './mannequin'
 
 // uc gorunum: ana model, koyu tenli iri (v2), acik tenli ince (v3); ayni iskelet ve UV
-const VARIANTS = [
+export const VARIANTS = [
   { url: asset('futbolcu.glb'), lod: asset('futbolcu_lod1.glb'), scale: 1 },
   { url: asset('futbolcu_v2.glb'), lod: asset('futbolcu_v2_lod1.glb'), scale: 1.03 },
   { url: asset('futbolcu_v3.glb'), lod: asset('futbolcu_v3_lod1.glb'), scale: 0.98 },
@@ -53,7 +53,7 @@ function addGloveAttr(mesh: THREE.SkinnedMesh) {
 const HEIGHT = 1.8
 
 /** kaynak model: sahne + olcek + zemin; numara yeri */
-interface Source {
+export interface Source {
   scene: THREE.Object3D
   k: number // metre / model birimi
   groundY: number
@@ -63,12 +63,12 @@ interface Source {
   lod: string | null
 }
 
-function mannequinSource(): Source {
+export function mannequinSource(): Source {
   return { scene: buildMannequin(), k: 1, groundY: 0, back: MANNEQUIN_BACK, kind: 'manken', variant: 0, lod: null }
 }
 
 /** GLB rigli mi (MPFB/UE kemik adlari)? Degilse null -> manken */
-function glbSource(scene: THREE.Object3D, variant: number): Source | null {
+export function glbSource(scene: THREE.Object3D, variant: number): Source | null {
   let skinned = false
   const bones = new Set<string>()
   scene.traverse((o) => {
@@ -107,7 +107,7 @@ function glbSource(scene: THREE.Object3D, variant: number): Source | null {
   return { scene, k, groundY: box.min.y, back: { y: yMid, z: backZ - 0.004 / k }, kind: 'glb', variant, lod: VARIANTS[variant].lod }
 }
 
-interface Char {
+export interface Char {
   root: THREE.Group
   kit: KitId
   lod0: THREE.Object3D[]
@@ -138,14 +138,14 @@ const DIVE_KEYS: Record<string, [number, number, number, number]> = {
 }
 const DIVE_HAND: BallLocal = { x: 0, y: 1, z: 0, dive: true }
 
-const kitOf = (team: number, role: string): KitId =>
+export const kitOf = (team: number, role: string): KitId =>
   team === 0 ? (role === 'kaleci' ? 'homeGK' : 'home') : role === 'kaleci' ? 'awayGK' : 'away'
 
 // klonlar ayni yuzlu; ten ve sac tonu ile cesitlilik (carpan)
 const SKIN_TONES = ['#ffffff', '#f0dccb', '#d9b49a', '#b98b6c']
 const HAIR_TONES = ['#ffffff', '#7a5a40', '#4a3a30', '#2a2420']
 
-function makeChar(src: Source, kits: KitMaterials, kit: KitId, number: number | null, variant = 0): Char {
+export function makeChar(src: Source, kits: KitMaterials, kit: KitId, number: number | null, variant = 0): Char {
   // v2/v3 kendi ten ve sac tonunu tasir; yalniz ana modele ton carpani uygulanir
   const base = src.variant === 0
   const skin = base ? SKIN_TONES[variant % SKIN_TONES.length] : '#ffffff'

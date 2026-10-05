@@ -4,17 +4,18 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Futbolcu</title>
+    <title>Esnaf Kupası — Halı Saha 4'e 4</title>
     <style>
       /* acilis perdesi (M2): modul yuklenirken ve ilk agir karede beyaz/donuk sayfa gorunmesin.
          Yalniz transform/opacity animasyonu: ana is parcacigi bloke iken de akar. */
-      html,body{margin:0;background:#2c6a32}
+      html,body{margin:0;background:#05070d}
       #splash{position:fixed;inset:0;z-index:100;display:none;flex-direction:column;align-items:center;justify-content:center;gap:22px;
-        background:linear-gradient(#5f9bc8 0%,#a7cbe0 22%,#d9e6e2 31%,#7fa776 36%,#3f7a3c 46%,#2c6a32 100%);
+        background:radial-gradient(ellipse 70% 55% at 50% 42%,rgba(238,123,48,.2),transparent 70%),linear-gradient(180deg,#0b1330,#070b1a 45%,#030408);
         font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif;color:#f4f6f8}
       html[data-splash] #splash{display:flex}
-      #splash .brand{font-size:46px;font-weight:800;letter-spacing:-.5px;color:#ee7b30;text-shadow:0 2px 14px rgba(0,0,0,.35)}
-      #splash .brand span{margin-left:12px;font-size:15px;font-weight:600;letter-spacing:6px;color:#f4f6f8}
+      #splash .brand{font-size:64px;font-weight:900;font-style:italic;letter-spacing:2px;color:#ffe9a8;text-shadow:0 0 22px rgba(246,183,34,.55),0 0 60px rgba(238,123,48,.35)}
+      #splash .brand em{display:block;margin-top:2px;font-size:22px;font-style:normal;font-weight:700;letter-spacing:.55em;text-align:center;color:#ffe9a8}
+      #splash .brand span{display:block;margin-top:8px;font-size:13px;font-style:normal;font-weight:700;letter-spacing:7px;text-align:center;color:rgba(244,246,248,.75)}
       #splash .bar{width:260px;height:5px;border-radius:3px;background:rgba(0,0,0,.28);overflow:hidden}
       #splash .bar i{display:block;width:40%;height:100%;border-radius:3px;background:linear-gradient(90deg,#ffe58a,#f0a52a);animation:sp-run 1.3s ease-in-out infinite}
       @keyframes sp-run{from{transform:translateX(-110%)}to{transform:translateX(270%)}}
@@ -28,7 +29,7 @@
     </script>
   </head>
   <body>
-    <div id="splash"><div class="brand">4'e 4<span>FUTBOL</span></div><div class="bar"><i></i></div></div>
+    <div id="splash"><div class="brand">ESNAF<em>KUPASI</em><span>HALI SAHA 4'E 4</span></div><div class="bar"><i></i></div></div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

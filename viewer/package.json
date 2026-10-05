@@ -1,5 +1,6 @@
 {
-  "name": "viewer",
+  "name": "esnaf-kupasi",
+  "description": "Esnaf Kupası, Halı Saha 4'e 4 (Three.js, React, WebGL)",
   "private": true,
   "version": "0.0.0",
   "type": "module",

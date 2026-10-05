@@ -191,7 +191,8 @@ async function waitIdle() {
     if (quiet && files.model > 0 && files.kits === 0 && now - lastIo() < 8000) quiet = false
     since = quiet ? since + 1 : 0
     if (since >= 3) return
-    if (performance.now() - t0 > 30000) return // takilan dosya: yine de devam
+    // 30 s'den sonra yalniz bekleyen dosya YOKSA devam (yavas aga yari yuklu oyun verilmez; kullanici 'Yine de oyna' diyebilir)
+    if (performance.now() - t0 > 30000 && ioPending() === 0) return
   }
 }
 

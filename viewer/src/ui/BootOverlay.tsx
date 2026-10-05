@@ -10,53 +10,18 @@ import { okLabel, useNav, usePad } from './menuNav'
 import './boot.css'
 
 const TIPS: [string, string][] = [
-  ['WASD / oklar', 'Koş; Shift ile sprint at.'],
-  ['Sol tık / Boşluk', 'Basılı tut, bırak: şut. Nişanı fareyle al.'],
-  ['Sağ tık / K', 'Fare yönündeki takım arkadaşına pas.'],
-  ['Z', 'Pas ya da şutla birlikte basılırsa aşırtma olur.'],
-  ['Fare tekerleği', 'Şuta sola ya da sağa falso verir.'],
+  ['Çay demlendi', 'Maç başlıyor, ısınmayı fazla uzatma.'],
+  ['Berberler', 'Bu sene iddialılar; sarı kırmızı formayı sen giyiyorsun.'],
+  ['Bakkallar', 'Veresiye topu çalıyor; orta sahada dikkatli ol.'],
+  ['WASD / Shift', 'Koş; Shift ile sprint at. Sol tık basılı tut, bırak: şut.'],
+  ['Sağ tık / K', 'Fare yönündeki takım arkadaşına pas. Z ile aşırtma.'],
   ['E / Shift+E', 'Müdahale ve kayarak müdahale. Geç kalan müdahale faul sayılır.'],
-  ['Q', 'Topa en yakın oyuncuna geç.'],
-  ['M', 'Antrenman ile maç arasında geçiş yapar.'],
-  ['X', 'VAR incelemesi iste; Esc tekrarı geçer.'],
-  ['V', 'Serbest kamera. F3 geliştirici panelini açar.'],
-  ['Gamepad', 'Sol çubuk koşu, A pas, B şut, X aşırtma, RB müdahale.'],
   ['Kural', 'Top çizgiyi tamamen geçmeden gol yok; ince pozisyonu VAR inceler.'],
   ['Kural', 'Kırmızı kart (ikinci sarı dahil): oyuncu 30 saniye dışarıda kalır, sonra geri döner.'],
-  ['4’e 4', 'Her takımda bir kaleci ve üç saha oyuncusu var.'],
 ]
 
 const useBoot = () => useSyncExternalStore(subscribeBoot, bootVersion)
 const useLoad = () => useSyncExternalStore(subscribeLoad, loadVersion)
-
-// saha cizgileri: 40 x 25 m saha, 1 m = 10 birim
-function PitchLines() {
-  return (
-    <svg className="boot-lines" viewBox="-30 -30 460 310" preserveAspectRatio="xMidYMid slice" aria-hidden>
-      <g fill="none" stroke="rgba(255,255,255,0.82)" strokeWidth="1.6">
-        <rect x="0" y="0" width="400" height="250" />
-        <line x1="200" y1="0" x2="200" y2="250" />
-        <circle cx="200" cy="125" r="40" />
-        <rect x="0" y="55" width="70" height="140" />
-        <rect x="330" y="55" width="70" height="140" />
-        <rect x="0" y="95" width="25" height="60" />
-        <rect x="375" y="95" width="25" height="60" />
-        <path d="M70 100 A 32 32 0 0 1 70 150" />
-        <path d="M330 100 A 32 32 0 0 0 330 150" />
-        <path d="M0 6 A 6 6 0 0 0 6 0 M394 0 A 6 6 0 0 0 400 6 M0 244 A 6 6 0 0 1 6 250 M394 250 A 6 6 0 0 1 400 244" />
-      </g>
-      <g fill="rgba(255,255,255,0.85)">
-        <circle cx="200" cy="125" r="1.8" />
-        <circle cx="70" cy="125" r="1.6" />
-        <circle cx="330" cy="125" r="1.6" />
-      </g>
-      <g fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="2.4">
-        <path d="M0 100 h-12 v50 h12" />
-        <path d="M400 100 h12 v50 h-12" />
-      </g>
-    </svg>
-  )
-}
 
 function StepRow({ s }: { s: Step }) {
   return (
@@ -177,51 +142,70 @@ function Loading({ leaving }: { leaving: boolean }) {
   })
   const label = ready ? 'Hazır' : cur ? friendly(cur) : 'Hazırlanıyor…'
 
+  const p = Math.max(0, Math.min(1, shown / 100))
+  const WORD = 'ESNAF'.split('')
   return (
     <div
-      className={`boot ${leaving ? 'leaving' : ''}`}
+      className={`boot kl ${leaving ? 'leaving' : ''} ${ready ? 'ready' : ''}`}
+      style={{ ['--p' as string]: p }}
       onPointerDown={(e) => e.stopPropagation()}
       onWheel={(e) => e.stopPropagation()}
       onContextMenu={(e) => e.preventDefault()}
     >
-      <div className="boot-sky" />
-      <div className="boot-field">
-        <div className="boot-plane">
-          <div className="boot-grass" />
-          <PitchLines />
-          <div className="boot-cloud" />
-        </div>
+      <div className="kl-glow" />
+      <Wire />
+      <div className="kl-grain" />
+
+      <div className="kl-pct" aria-hidden>
+        <b>{Math.round(shown)}</b>
+        <small>%</small>
       </div>
-      <div className="boot-sun" />
-      <div className="boot-vignette" />
 
-      <div className="bl">
-        <div className="bl-logo">
-          <b>4'e 4</b>
-          <span>FUTBOL</span>
+      <div className="kl-center">
+        <h1 className="kl-word" aria-label="ESNAF KUPASI">
+          <i className="kl-line l" />
+          <span className="kl-letters">
+            {WORD.map((c, i) => (
+              <b key={i} style={{ animationDelay: `${0.08 * i}s` }}>
+                {c}
+              </b>
+            ))}
+          </span>
+          <i className="kl-line r" />
+        </h1>
+        <div className="kl-kupa">KUPASI</div>
+        <div className="kl-sub">HALI SAHA 4'E 4</div>
+
+        <div className="kl-track" role="progressbar" aria-valuenow={Math.round(shown)} aria-valuemin={0} aria-valuemax={100}>
+          <div className="kl-rail" />
+          <div className="kl-trail" />
+          <div className="kl-ball">
+            <Ball />
+          </div>
+          <div className="kl-goal">
+            <GoalNet />
+            {ready && (
+              <div className="kl-burst">
+                {Array.from({ length: 10 }, (_, i) => (
+                  <u key={i} style={{ ['--a' as string]: `${i * 36}deg` }} />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="bl-mid">
+        <div className="kl-action">
           {ready ? (
-            <button className="bl-play" onClick={() => play()} autoFocus>
+            <button className="bl-play kl-play" onClick={() => play()} autoFocus>
               OYNA
               <kbd>{okLabel(pad)}</kbd>
             </button>
           ) : (
-            <div className="bl-pct" aria-live="off">
-              {Math.round(shown)}
-              <small>%</small>
-            </div>
-          )}
-          <div className="bl-bar" role="progressbar" aria-valuenow={Math.round(shown)} aria-valuemin={0} aria-valuemax={100}>
-            <div className="fill" style={{ transform: `scaleX(${Math.max(0.015, shown / 100)})` }} />
-            <div className="shine" />
-          </div>
-          <div className="bl-step">{label}</div>
-          {stalled && (
-            <button className="boot-anyway" onClick={() => play(true)}>
-              {boot.errors.length ? 'Hataya rağmen oyna' : 'Uzun sürdü, yine de oyna'}
-            </button>
+            stalled && (
+              <button className="boot-anyway" onClick={() => play(true)}>
+                {boot.errors.length ? 'Hataya rağmen oyna' : 'Uzun sürdü, yine de oyna'}
+              </button>
+            )
           )}
           {boot.errors.map((e, i) => (
             <div key={i} className="boot-err">
@@ -229,22 +213,89 @@ function Loading({ leaving }: { leaving: boolean }) {
             </div>
           ))}
         </div>
+      </div>
 
-        <div className="bl-foot">
+      <div className="kl-foot">
+        <div className="kl-glass">
+          <span className="kl-step">{label}</span>
           <Tip />
-          <button className="bl-more" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
-            Ayrıntılar {open ? '▴' : '▾'}
-          </button>
-          {open && (
-            <ul className="boot-steps bl-steps">
-              {steps.map((s) => (
-                <StepRow key={s.id} s={s} />
-              ))}
-            </ul>
-          )}
         </div>
+        <button className="bl-more" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+          Ayrıntılar {open ? '▴' : '▾'}
+        </button>
+        {open && (
+          <ul className="boot-steps bl-steps">
+            {steps.map((s) => (
+              <StepRow key={s.id} s={s} />
+            ))}
+          </ul>
+        )}
       </div>
     </div>
+  )
+}
+
+/** kose saha yaylari + kafes tel orgusu (cok dusuk opaklik) */
+function Wire() {
+  return (
+    <svg className="kl-wire" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" aria-hidden>
+      <defs>
+        <pattern id="kl-mesh" width="26" height="26" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <path d="M0 0H26M0 0V26" stroke="#fff" strokeWidth="1" fill="none" />
+        </pattern>
+        <linearGradient id="kl-fade" x1="0" x2="1">
+          <stop offset="0" stopColor="#fff" />
+          <stop offset="0.28" stopColor="#fff" stopOpacity="0" />
+          <stop offset="0.72" stopColor="#fff" stopOpacity="0" />
+          <stop offset="1" stopColor="#fff" />
+        </linearGradient>
+        <mask id="kl-m">
+          <rect width="1000" height="600" fill="url(#kl-fade)" />
+        </mask>
+      </defs>
+      <rect width="1000" height="600" fill="url(#kl-mesh)" mask="url(#kl-m)" opacity="0.5" />
+      <g fill="none" stroke="#fff" strokeWidth="2">
+        <path d="M0 70 A70 70 0 0 0 70 0" />
+        <path d="M1000 70 A70 70 0 0 1 930 0" />
+        <path d="M0 530 A70 70 0 0 1 70 600" />
+        <path d="M1000 530 A70 70 0 0 0 930 600" />
+      </g>
+    </svg>
+  )
+}
+
+function Ball() {
+  return (
+    <svg viewBox="-20 -20 40 40" aria-hidden>
+      <circle r="18" fill="#f6f7f9" stroke="#1a1d22" strokeWidth="1.6" />
+      <path d="M0 -7 L6.7 -2.2 L4.1 5.7 L-4.1 5.7 L-6.7 -2.2 Z" fill="#15181d" />
+      <g stroke="#15181d" strokeWidth="1.4" fill="none" strokeLinecap="round">
+        <path d="M0 -7 L0 -17M6.7 -2.2 L16 -5.5M4.1 5.7 L10 14M-4.1 5.7 L-10 14M-6.7 -2.2 L-16 -5.5" />
+      </g>
+      <g fill="#15181d">
+        <path d="M-9 -15 L-3 -17 L-5 -11 Z" />
+        <path d="M9 -15 L3 -17 L5 -11 Z" />
+        <path d="M16 3 L15 9 L11 6 Z" />
+        <path d="M-16 3 L-15 9 L-11 6 Z" />
+        <path d="M0 18 L-5 16 L5 16 Z" />
+      </g>
+    </svg>
+  )
+}
+
+function GoalNet() {
+  return (
+    <svg viewBox="0 0 60 44" aria-hidden>
+      <path d="M4 42 V6 H56 V42" fill="none" stroke="#f4f6f8" strokeWidth="3" strokeLinecap="round" />
+      <g stroke="rgba(255,255,255,0.45)" strokeWidth="1">
+        {Array.from({ length: 8 }, (_, i) => (
+          <path key={'v' + i} d={`M${10 + i * 6} 6V42`} />
+        ))}
+        {Array.from({ length: 6 }, (_, i) => (
+          <path key={'h' + i} d={`M4 ${12 + i * 6}H56`} />
+        ))}
+      </g>
+    </svg>
   )
 }
 
@@ -259,8 +310,8 @@ function Curtain() {
   return (
     <div className={`boot-curtain ${on ? 'on' : ''}`} aria-hidden={!on}>
       <div className="boot-brand small">
-        <b>4'e 4</b>
-        <span>FUTBOL</span>
+        <b>ESNAF KUPASI</b>
+        <span>HALI SAHA 4'E 4</span>
       </div>
       <div className="boot-curtain-label">
         <span className="boot-spin" />

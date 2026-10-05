@@ -407,3 +407,119 @@
     animation: none;
   }
 }
+
+/* ---------- sag tarafta 3B sahne (MenuStage) + kompakt kart ---------- */
+.mm-stage {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 62%;
+  z-index: 0;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 28%, #000 94%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 28%, #000 94%, transparent 100%);
+}
+.mm-stage-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 45% at 55% 72%, rgba(47, 124, 56, 0.35), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 55% 30%, rgba(238, 123, 48, 0.12), transparent 70%),
+    linear-gradient(180deg, #0b1330, #05070d);
+}
+.mm-stage > :not(.mm-stage-bg) {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.mm-main.stage {
+  position: relative;
+  z-index: 1;
+  grid-template-columns: minmax(400px, 42%) 1fr;
+  align-items: stretch;
+}
+.mm-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+  min-height: 0;
+}
+.mm-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 18px;
+  align-items: center;
+  max-width: 540px;
+  padding: 14px 18px;
+  border-radius: 6px;
+  border-left: 4px solid var(--o);
+  background: rgba(8, 12, 16, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.4);
+}
+.mm-card .mm-jerseys {
+  gap: 6px;
+}
+.mm-card .mm-jersey svg {
+  max-width: 78px;
+  animation: none;
+}
+.mm-card .mm-jersey b {
+  font-size: 11px;
+}
+.mm-card .mm-jersey small {
+  display: none;
+}
+.mm-card-side {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.mm-card-side h3 {
+  margin: 0;
+  font: italic 800 12px/1 var(--head);
+  letter-spacing: 3px;
+  color: var(--y);
+  text-transform: uppercase;
+}
+.mm-card .mm-seg button {
+  padding: 8px 6px;
+  font-size: 12px;
+}
+.mm-card .mm-field input {
+  padding: 8px 10px;
+}
+.mm-over {
+  align-self: center;
+  justify-self: end;
+  width: min(100%, 500px);
+}
+.mm-over .mm-panel {
+  background: rgba(8, 12, 16, 0.93);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+@media (max-width: 1000px) {
+  .mm-stage {
+    opacity: 0.35;
+    width: 100%;
+  }
+  .mm-main.stage {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mm-card .mm-jersey b {
+  font-size: 9px;
+  letter-spacing: 1px;
+  line-height: 1.15;
+}
+.mm-logo b {
+  font-size: 26px;
+  letter-spacing: 0.5px;
+}

@@ -20,7 +20,7 @@ git push -q origin main
 
 # 3) site deposu (public) yoksa olustur
 if ! gh repo view "$SITE" >/dev/null 2>&1; then
-  gh repo create "$SITE" --public --description "4v4 gercekci futbol oyunu: oynanabilir surum (Three.js, React, WebGL)" >/dev/null
+  gh repo create "$SITE" --public --description "Esnaf Kupasi, Hali Saha 4'e 4: oynanabilir surum (Three.js, React, WebGL)" >/dev/null
 fi
 
 # 4) dist + README -> orphan dal
@@ -28,9 +28,9 @@ TMP=$(mktemp -d)
 cp -r viewer/dist/. "$TMP/"
 touch "$TMP/.nojekyll"
 cat > "$TMP/README.md" <<'EOF'
-# 4v4 Futbol
+# ESNAF KUPASI
 
-Tarayicida oynanan gercekci 4'e 4 futbol oyunu (Three.js, React, WebGL). Bu depo yalnizca derlenmis surumu icerir.
+Hali Saha 4'e 4: mahalle esnaf turnuvasi (Berberler Spor ve Bakkallar Spor), tarayicida oynanan gercekci 4'e 4 futbol oyunu (Three.js, React, WebGL). Bu depo yalnizca derlenmis surumu icerir.
 
 Kontroller: WASD hareket, Shift kos, Bosluk (basili tut) sut, K pas, E mudahale (cift dokunus: kayarak), Q oyuncu degistir, `,` `.` falso. PS4/DualShock destekli (Menu > Kol Ayarlari). Cok oyunculu (oda kodu ile, P2P).
 EOF

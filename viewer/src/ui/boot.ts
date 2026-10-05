@@ -6,9 +6,12 @@ import { defineStep, hookLoadingManager, setProgress } from './loadTracker'
 const q = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams()
 const webdriver = typeof navigator !== 'undefined' && !!navigator.webdriver
 /** yukleme ekrani: kullanicida acik, otomasyonda (playwright) yalniz ?boot=1 ile */
-// sicak modul degisimi (HMR) ile canli oyunun ortasinda yuklenirse ekran acilmaz
-const late = typeof performance !== 'undefined' && performance.now() > 20000
-export const BOOT = q.get('boot') === '1' || (q.get('boot') !== '0' && !webdriver && !late)
+// sicak modul degisimi (HMR, yalniz gelistirme): modul ikinci kez degerlendirilirse canli oyunun ortasindayiz, ekran acilmaz.
+// (Eskiden sure olcuyordu: yavas aglarda paket 20 s'den gec gelince yukleme ekrani HIC acilmiyordu.)
+const hot = (import.meta as ImportMeta & { hot?: { data: Record<string, unknown> } }).hot
+const late = !!hot?.data.booted
+if (hot) hot.data.booted = true
+export const BOOT = !late && (q.get('boot') === '1' || (q.get('boot') !== '0' && !webdriver))
 /** on isitma: yukleme ekrani varken ya da ?warm=1 */
 export const WARM = q.get('warm') === '1' || (BOOT && q.get('warm') !== '0')
 

@@ -1,5 +1,5 @@
 // Ana menu + cok oyunculu giris (M2 tasarimi). Mantik (oda kur/katil, mod baslatma) src/mp/session.ts'te; burasi gorunum.
-import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { Component, Suspense, lazy, useEffect, useRef, useState, useSyncExternalStore, type ComponentType, type ReactNode } from 'react'
 import { aiLevel, setAiLevel, type AiLevel } from '../ai/config'
 import { QUALITY, setQuality, type Quality } from '../env/quality'
 import { TIMES, getTimeOfDay, setTimeOfDay, subscribeTimeOfDay } from '../env/timeOfDay'
@@ -14,6 +14,37 @@ import './menu.css'
 const useMp = () => useSyncExternalStore(subscribeMp, mpVersion)
 const useTod = () => useSyncExternalStore(subscribeTimeOfDay, getTimeOfDay)
 const VERSION = 'v1.0'
+
+// Sag taraftaki 3B sahne (I2: MenuStage.tsx; yoksa/yuklenemezse koyu degrade yer tutucu)
+type StageProps = { kit?: string; variant?: string; paused?: boolean }
+const stageLoaders = import.meta.glob('./MenuStage.tsx') as Record<string, () => Promise<{ default?: ComponentType<StageProps>; MenuStage?: ComponentType<StageProps> }>>
+const stageLoader = Object.values(stageLoaders)[0]
+const StageLazy = stageLoader ? lazy(() => stageLoader().then((m) => ({ default: (m.default ?? m.MenuStage) as ComponentType<StageProps> }))) : null
+
+class StageBoundary extends Component<{ children: ReactNode }, { bad: boolean }> {
+  state = { bad: false }
+  static getDerivedStateFromError() {
+    return { bad: true }
+  }
+  render() {
+    return this.state.bad ? null : this.props.children
+  }
+}
+
+function Stage() {
+  return (
+    <div className="mm-stage" aria-hidden>
+      <div className="mm-stage-bg" />
+      {StageLazy && (
+        <StageBoundary>
+          <Suspense fallback={null}>
+            <StageLazy kit="home" paused={false} />
+          </Suspense>
+        </StageBoundary>
+      )}
+    </div>
+  )
+}
 
 // ------------------------------------------------------------ ortak parcalar
 function Strip() {
@@ -31,8 +62,8 @@ function Strip() {
   return (
     <div className="mm-strip">
       <div className="mm-logo">
-        <b>4'e 4</b>
-        <span>FUTBOL</span>
+        <b>ESNAF KUPASI</b>
+        <span>HALI SAHA 4'E 4</span>
       </div>
       <div className="mm-status">
         <span>{VERSION}</span>
@@ -83,7 +114,7 @@ function NameField() {
 }
 
 function Jersey({ a, b, stripe, label, sub, num }: { a: string; b: string; stripe: number; label: string; sub: string; num: number }) {
-  const id = `jc-${label}`
+  const id = `jc-${label.replace(/\W/g, '')}`
   const shirt = 'M32 18 L62 6 Q80 22 98 6 L128 18 L158 52 L134 74 L120 62 L120 152 L40 152 L40 62 L26 74 L2 52 Z'
   const bars: ReactNode[] = []
   if (stripe) for (let x = 0; x < 160; x += stripe * 2) bars.push(<rect key={x} x={x} y="0" width={stripe} height="160" fill={b} />)
@@ -141,15 +172,16 @@ function PlayPanel() {
     return () => window.removeEventListener('mm-ai', on)
   }, [])
   return (
-    <div className="mm-panel">
-      <h3>Takımlar</h3>
+    <div className="mm-card">
       <div className="mm-jerseys">
-        <Jersey a="#b80f22" b="#f2b705" stripe={27} label="EV" sub="Sarı kırmızı" num={9} />
-        <Jersey a="#16224a" b="#16224a" stripe={0} label="DEPLASMAN" sub="Lacivert" num={7} />
+        <Jersey a="#b80f22" b="#f2b705" stripe={27} label="BERBERLER SPOR" sub="Sarı kırmızı" num={9} />
+        <Jersey a="#16224a" b="#16224a" stripe={0} label="BAKKALLAR SPOR" sub="Lacivert" num={7} />
       </div>
-      <h3>Zorluk</h3>
-      <Seg<AiLevel> v={lv} on={(x) => (setAiLevel(x), setLv(x))} opts={[['kolay', 'Kolay'], ['orta', 'Orta'], ['zor', 'Zor']]} />
-      <NameField />
+      <div className="mm-card-side">
+        <h3>Zorluk</h3>
+        <Seg<AiLevel> v={lv} on={(x) => (setAiLevel(x), setLv(x))} opts={[['kolay', 'Kolay'], ['orta', 'Orta'], ['zor', 'Zor']]} />
+        <NameField />
+      </div>
     </div>
   )
 }
@@ -204,7 +236,7 @@ function AboutPanel() {
     <div className="mm-panel">
       <h3>Hakkında</h3>
       <p className="mm-about">
-        4'e 4 Futbol, tarayıcıda çalışan gerçek zamanlı bir halı saha oyunudur. Her takımda bir kaleci ve üç saha oyuncusu bulunur; hakem, faul, kart, duran toplar ve VAR incelemesi
+        Esnaf Kupası, mahalle esnafının halı saha turnuvasıdır: Berberler Spor ile Bakkallar Spor 4'e 4 karşılaşır. Tarayıcıda çalışan gerçek zamanlı bir oyundur. Her takımda bir kaleci ve üç saha oyuncusu bulunur; hakem, faul, kart, duran toplar ve VAR incelemesi
         oyunun içindedir.
       </p>
       <p className="mm-about dim">Sürüm {VERSION}</p>
@@ -259,7 +291,9 @@ export function MainMenu() {
   return (
     <div className="mm-root">
       <Strip />
-      <div className="mm-main">
+      <Stage />
+      <div className="mm-main stage">
+        <div className="mm-left">
         <nav className="mm-list" aria-label="Ana menü">
           {ITEMS.map((it, i) => (
             <button
@@ -278,10 +312,15 @@ export function MainMenu() {
             </button>
           ))}
         </nav>
-        {cur.panel === 'play' && <PlayPanel />}
-        {cur.panel === 'controls' && <ControlsPanel />}
-        {cur.panel === 'settings' && <SettingsPanel />}
-        {cur.panel === 'about' && <AboutPanel />}
+          {cur.panel === 'play' && <PlayPanel />}
+        </div>
+        {cur.panel !== 'play' && (
+          <div className="mm-over">
+            {cur.panel === 'controls' && <ControlsPanel />}
+            {cur.panel === 'settings' && <SettingsPanel />}
+            {cur.panel === 'about' && <AboutPanel />}
+          </div>
+        )}
       </div>
       <Hints extra={[['◄ ►', 'Zorluk']]} />
     </div>
