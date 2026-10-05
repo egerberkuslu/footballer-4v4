@@ -290,6 +290,24 @@ console.log('9b) kirmizi kart: 30 s ceza ve geri donus')
   ok(Math.abs(st.facing - look) < 1e-9, 'yuz ekrana')
 }
 
+console.log('9c) maç sonu: yeniden oyna')
+{
+  const { g, r, ball, step, startPlay } = fresh()
+  startPlay()
+  g.emit(contact(7, 1, { kind: 'tackle', intensity: 0.97, x: -3 }))
+  step(8)
+  g.match.score = [2, 1]
+  r.endHalf()
+  g.match.half = 2
+  r.endHalf()
+  ok(g.match.phase === 'fulltime', 'maç sonu fazı')
+  r.start()
+  step(2)
+  ok(g.match.phase === 'kickoff' && g.match.score[0] === 0 && g.match.score[1] === 0 && g.match.clock === 0 && g.match.half === 1, 'yeni mac: 0-0, 1. yari, baslama vurusu')
+  ok(g.match.suspended.length === 0 && g.players.every((p) => !p.sentOff && p.yellow === 0), 'ceza ve kartlar sifir')
+  ok(startPlay() || r.mode === 'ready' || r.mode === 'play', 'yeni mac oynanir')
+}
+
 // ---------------------------------------------------------------- gol ve VAR iptali
 console.log('10) gol + VAR iptali')
 {

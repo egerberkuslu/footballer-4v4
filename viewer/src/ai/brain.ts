@@ -7,6 +7,7 @@ import { world } from '../sim'
 import type { ActionType, Player, PlayerInput, Restart, TeamId } from '../game/types'
 import { isRemoteHuman } from '../mp/role'
 import { AI, type AiTuning, gauss, rnd, tuneFor } from './config'
+import { diveReachable } from '../sim/keeperDive'
 import { PASS_CONTACT, PRED_H, PRED_N, avgPassSpeed, pred, predictBall } from './predict'
 
 // etkin takim ayari (her takim isleminden once use(team))
@@ -110,7 +111,7 @@ let restartT = 0
 let takerDelay = 1 // bu duran topta vurmadan once bekleme (s), kural en fazla 3 s
 let tick = 0
 // istatistik/ayiklama icin disari acik
-export const aiStats = { passCancel: 0, intent: [] as ({ rid: number; ax: number; az: number; margin: number; lob: boolean; t: number } | undefined)[], carrier: {} as Record<string, number>, passLog: [] as { id: number; margin: number; d: number; lob: boolean }[], riskyMargins: [] as number[], decisions: 0, curls: 0, shotLog: [] as { curl: number; d: number; t: number }[], passes: 0, shots: 0, lobs: 0, tackles: 0, slides: 0, dives: 0, ms: 0, msMax: 0 }
+export const aiStats = { passCancel: 0, intent: [] as ({ rid: number; ax: number; az: number; margin: number; lob: boolean; t: number } | undefined)[], carrier: {} as Record<string, number>, passLog: [] as { id: number; margin: number; d: number; lob: boolean }[], riskyMargins: [] as number[], decisions: 0, curls: 0, shotLog: [] as { curl: number; d: number; t: number }[], passes: 0, shots: 0, lobs: 0, tackles: 0, slides: 0, tkLog: [] as { id: number; t: number; bd: number; sp: number }[], dives: 0, ms: 0, msMax: 0 }
 
 const clamp = (v: number, a: number, b: number) => (v < a ? a : v > b ? b : v)
 const inField = (b: Brain, m = 0.8) => {
@@ -156,6 +157,10 @@ const keeperOf = (team: TeamId) => game.players.find((p) => p.team === team && p
 
 /** ofsayt: hucum yonunde isaretli (dir*x) en ileri izinli govde merkezi.
  *  K'nin olcumu: on (dir*x + 0.25) > max(sondan ikinci rakip, top); kendi yari sahasinda ofsayt yok. */
+const TK_MAXV = 3.4 // tasiyici bu hizdan hizliysa ayakta mudahale denenmez (olculen temas ~%0-20); jockey ile surup yavaslamasini bekler
+const DIVE_ANY = false // true: menzil disi tahminde de kaleye giden sutta dal (maç basina 14-19 dalis, hepsi ıska); false: yalniz planDive menzilindeki sutlara dal (~0-1)
+const TK_R = 1.15 // tahmini top mesafesi siniri (m)
+const TK_LEAD = 0.18 // mudahale temas gecikmesi (s)
 const OFF_BODY = 0.25
 function onsideMax(team: TeamId, bx: number): number {
   const d = dirOf(team)
@@ -332,28 +337,29 @@ function jockeyTackle(p: Player, b: Brain, gdt: number) {
   const c = game.players.find((q) => q.hasBall && q.team !== p.team)
   if (!c || (c.role === 'kaleci' && (world.ball.y > 0.3 || Math.abs(c.x) > HL - BOX_D))) return
   const bl = world.ball
-  const bd = dist(p.x, p.z, bl.x, bl.z)
+  const bd = dist(p.x + p.vx * TK_LEAD * 0.5, p.z + p.vz * TK_LEAD * 0.5, bl.x + bl.vx * TK_LEAD, bl.z + bl.vz * TK_LEAD)
   const cd = dist(c.x, c.z, bl.x, bl.z)
   // top rakip ayagindan acildi (>0.8 m) ve bize yakin
-  if (bd > 1.1 || cd < 0.6 || bl.y > 0.5) return
+  if (bd > TK_R || cd < 0.3 || bl.y > 0.5 || Math.hypot(c.vx, c.vz) >= TK_MAXV) return
   const fx = Math.sin(c.facing)
   const fz = Math.cos(c.facing)
   if ((p.x - c.x) * fx + (p.z - c.z) * fz < 0.2) return // rakibin onunde degiliz: girme
   if (c.anim === 'shield') return
   // karar basina degil saniyede: seviye tackleP'si ~0.15 s icinde karar verir
   if (rnd() < T.tackleP * Math.min(1, gdt * 7)) {
-    setAct(b, 'tackle', 0.6, bl.x, 0, bl.z, 0.2)
+    setAct(b, 'tackle', 0.6, bl.x + bl.vx * TK_LEAD, 0, bl.z + bl.vz * TK_LEAD, 0.2)
     b.cool = t + 2.1 + rnd() * 0.5
     aiStats.tackles++
+    aiStats.tkLog.push({ id: p.id, t, bd, sp: Math.hypot(c.vx, c.vz) })
   }
 }
 
 /** kaleye sut degerlendirmesi: hedef kose, isabet olasiligi kabasi */
-function shotOption(p: Player) {
+function shotOption(p: Player, maxD = 22) {
   const dir = dirOf(p.team)
   const gx = dir * HL
   const d = dist(p.x, p.z, gx, 0)
-  if (d > 24 || (gx - p.x) * dir < 1) return null
+  if (d > maxD || (gx - p.x) * dir < 1) return null
   const k = keeperOf((1 - p.team) as TeamId)
   let best = { z: 0, q: -1, y: 0.4, clear: false }
   for (const s of [-1, 1]) {
@@ -388,9 +394,9 @@ function shoot(b: Brain, s: { x: number; z: number; y: number; d: number; clear?
   const z = s.z + gauss() * err
   const y = clamp(s.y + gauss() * err * 0.6, 0.15, GOAL_H + 0.6)
   // uzak sut, engelsiz yol: kosedeki falsolu secenek (cikis dogrusu merkeze bakar, top kose icine kivrilir)
-  const curl = aiFlags.curl && s.clear && s.d >= 18 && Math.abs(s.z) > 0.6 && rnd() < 0.6
+  const curl = aiFlags.curl && s.clear && s.d >= 18 && Math.abs(s.z) > 0.6 && rnd() < 0.9
   if (curl) {
-    const v = 25 + rnd() * 4
+    const v = 22 + rnd() * 4
     setAct(b, 'shoot', speedToPower(v), s.x, y, z)
     if (b.act) b.act.curl = Math.sign(z) * (2 + rnd())
     aiStats.shots++
@@ -473,12 +479,21 @@ function decideCarrier(p: Player, b: Brain) {
   const sh = indirectTaker === p.id ? null : shotOption(p) // endirekt vurusu kullanan baskasi degene dek sut cekmez (gol sayilmaz)
   if (sh) {
     // uzak (>=18 m) engelsiz yolda falsolu sut daha cok denenir; falso kapaliysa eskisi gibi sikı esik
-    const need = sh.d < 9 ? 0.35 : sh.d < 14 ? 0.62 : sh.d >= 18 && sh.clear && aiFlags.curl ? 0.37 : 0.85
+    const need = sh.d < 9 ? 0.35 : sh.d < 14 ? 0.62 : 0.85
     if (sh.quality > need - pressure * 0.15 + (rnd() - 0.5) * 0.15) {
       if (lined(p, b, sh.x, sh.z)) {
         shoot(b, sh)
         cs('sut')
       } else cs('sut-don')
+      return
+    }
+  }
+  // uzak (18-24 m) engelsiz yolda seyrek falsolu sut (normal sut kosulundan bagimsiz, hafif)
+  if (aiFlags.curl && indirectTaker !== p.id && !sh && pressure < 0.5 && rnd() < 0.04) {
+    const fs = shotOption(p, 24)
+    if (fs && fs.d >= 18 && fs.clear && fs.quality > 0.3 && lined(p, b, fs.x, fs.z)) {
+      shoot(b, fs)
+      cs('sut-falso')
       return
     }
   }
@@ -723,6 +738,9 @@ function keeperHome(k: Player, bx: number, bz: number) {
 }
 
 // ---------------------------------------------------------------- kaleci
+/** kalecinin yanal konumlanma hizi (move buyuklugu): 4.2 m/s = RUN_SPEED(6.2) * KEEPER_MUL(0.9) * 0.75 */
+const KEEPER_LAT = 0.75
+
 function keeperThink(k: Player, b: Brain, carrier: Player | null) {
   use(k.team)
   const dir = dirOf(k.team)
@@ -739,7 +757,7 @@ function keeperThink(k: Player, b: Brain, carrier: Player | null) {
   // hazir durus: kucuk duzeltmeler yavas yan adimla (locomotion 'keeper-shuffle'), uzaksa kos
   const far = dist(k.x, k.z, home.x, home.z)
   b.sprint = false
-  b.speed = far > 2.5 ? 1 : 0.45
+  b.speed = far > 2.5 ? KEEPER_LAT : 0.45 // yanal konumlanma hizi sinirli (~4.2 m/s); topa cikis (1v1) ayri
 
   if (k.hasBall) {
     // elde 1-4 s; hizli hucum firsati varsa erken
@@ -804,6 +822,23 @@ function keeperThink(k: Player, b: Brain, carrier: Player | null) {
       }
     }
   }
+  // kalecinin durdugu x'te top yolu: konumlanma ve dalis hedefi burasidir (kale cizgisi kesisimi yalniz 'kaleye gidiyor mu' karari)
+  let atK: { t: number; y: number; z: number } | null = null
+  if (cross) {
+    for (let i = 1; i < PRED_N; i++) {
+      if ((pred[i * 3] - k.x) * -dir >= 0) {
+        const x0 = pred[(i - 1) * 3]
+        const x1 = pred[i * 3]
+        const f = Math.abs(x1 - x0) > 1e-6 ? clamp((k.x - x0) / (x1 - x0), 0, 1) : 1
+        atK = {
+          t: (i - 1 + f) * PRED_H,
+          y: pred[(i - 1) * 3 + 1] + (pred[i * 3 + 1] - pred[(i - 1) * 3 + 1]) * f,
+          z: pred[(i - 1) * 3 + 2] + (pred[i * 3 + 2] - pred[(i - 1) * 3 + 2]) * f,
+        }
+        break
+      }
+    }
+  }
   const onTarget = cross && Math.abs(cross.z) < GW + 0.6 && cross.y < GOAL_H + 0.4
   if (onTarget) {
     if (threat[team] < 0) {
@@ -811,21 +846,19 @@ function keeperThink(k: Player, b: Brain, carrier: Player | null) {
       threatMiss[team] = rnd() < T.keeperMiss
     }
     if (t - threat[team] >= T.react + (threatMiss[team] ? 0.2 : 0)) {
-      const c = cross!
+      const c = atK ?? cross!
+      const cl = cross!
       b.tx = k.x
       b.tz = c.z
       const off = Math.abs(c.z - k.z)
-      // ayakta yetisebilir mi: kalan surede yan adim + el menzili (~0.9 m), boy (1.9 m)
-      const reachStand = 0.9 + c.t * 3.5
-      b.sprint = off > 1.2
-      b.speed = 1
+      b.sprint = false // gercek kaleci yanal shuffle ~4.2 m/s: uzak koseye yetisemezse dalar
+      b.speed = KEEPER_LAT
       // dalis: yatayda en uzak an 0.40 s; top keciye o surede varacakken kalk (alcak/yuksek aim.y ile)
       const late = c.t < 0.55
       // dalis yalniz kaleye giden (direk ici) ve ulasilabilir sutta: yan 2,3 m, yukseklik 2,6 m, kok hizi <= 4,5 m/s
-      const diveOn = Math.abs(c.z) < GW + 0.2 && c.y < GOAL_H + 0.2
-      const tFly = Math.max(0.05, c.t - 0.06)
-      const canReach = off <= 2.3 && c.y <= 2.6 && Math.max(0, off - 0.95) / tFly <= 4.5
-      if (diveOn && canReach && (off > reachStand || c.y > 1.9 || (late && off > 0.9)) && c.t < 0.9 && k.actionLock <= 0 && !b.act) {
+      const diveOn = Math.abs(cl.z) < GW + 0.2 && cl.y < GOAL_H + 0.2
+      const canReach = diveReachable(Math.hypot(c.z - k.z, gx - k.x), c.y, c.t) // sim/keeperDive ile ayni kriter
+      if (diveOn && (canReach || DIVE_ANY) && (off > 0.9 || c.y > 1.9 || (late && off > 0.9)) && c.t < 0.9 && k.actionLock <= 0 && !b.act) {
         setAct(b, 'dive', 1, k.x, c.y, c.z, 0.15)
         aiStats.dives++
       }
@@ -1068,13 +1101,16 @@ function decideTeam(team: TeamId) {
         }
         if (!keeperHolds && t > b.cool && p.actionLock <= 0 && !b.act) {
           // top bizim tarafimizda ve ayak menzilinde degilse girme (topsuz mudahale faul olur)
-          const bdist = dist(p.x, p.z, world.ball.x, world.ball.z)
+          // temas ~0,18 s sonra: top (ve biz) o ana gore ilerler
+          const bdist = dist(p.x + p.vx * TK_LEAD * 0.5, p.z + p.vz * TK_LEAD * 0.5, world.ball.x + world.ball.vx * TK_LEAD, world.ball.z + world.ball.vz * TK_LEAD)
           // topun bacak menzilinde (<=1,1 m) ve rakip ayagindan acikta oldugunda dene
-          const ballSide = bdist <= 1.1 && bdist < d + 0.1 && dist(carrier.x, carrier.z, world.ball.x, world.ball.z) > 0.55
-          if (t > b.noTackle && ballSide && (behind ? !shielding && rnd() < T.tackleBehind : rnd() < T.tackleP)) {
-            setAct(b, 'tackle', 0.6, world.ball.x, 0, world.ball.z, 0.2)
+          const ballSide = bdist <= TK_R && bdist < d + 0.1
+          const csp2 = Math.hypot(carrier.vx, carrier.vz)
+          if (t > b.noTackle && ballSide && csp2 < TK_MAXV && (behind ? !shielding && rnd() < T.tackleBehind : rnd() < T.tackleP)) {
+            setAct(b, 'tackle', 0.6, world.ball.x + world.ball.vx * TK_LEAD, 0, world.ball.z + world.ball.vz * TK_LEAD, 0.2)
             b.cool = t + 2.1 + rnd() * 0.5
             aiStats.tackles++
+            aiStats.tkLog.push({ id: p.id, t, bd: bdist, sp: Math.hypot(carrier.vx, carrier.vz) })
           } else if (t > b.noTackle && d > 1.6 && d < 3.0 && !behind && approaching(carrier, p) && dist(carrier.x, carrier.z, ogx, 0) < 15 && rnd() < T.slide) {
             setAct(b, 'slide', 0.8, world.ball.x, 0, world.ball.z, 0.2)
             b.cool = t + 2.5

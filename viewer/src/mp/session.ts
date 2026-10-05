@@ -214,6 +214,7 @@ export function hostCreate() {
       if (fatal) {
         mp.conn = 'lost'
         leave(true)
+        mp.info = ''
         mp.screen = 'mp'
       }
       bumpMp()
@@ -506,6 +507,7 @@ export function guestJoin(codeIn: string) {
       mp.error = msg
       mp.conn = 'lost'
       leave(true)
+      mp.info = ''
       if (wasMatch) endMatchLocal()
       mp.screen = 'mp'
       bumpMp()

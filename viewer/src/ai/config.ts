@@ -25,9 +25,9 @@ export interface AiTuning {
 }
 
 const LEVELS: Record<AiLevel, AiTuning> = {
-  kolay: { decideHz: 5, react: 0.25, passErr: 1.6, shotErr: 0.9, misjudge: 0.25, tackleBehind: 0.08, slide: 0.03, shootBias: -0.05, lineErr: 0.75, offsideTrap: 0, keeperHold: [1.2, 2.2], takerDelay: [1.0, 2.0], keeperPosErr: 0.9, keeperMiss: 0.35, pressSpeed: 0.75, tackleP: 0.3, markLoose: 1.8, jockey: 0.3, keeperSkill: 0.1 },
-  orta: { decideHz: 7, react: 0.2, passErr: 0.9, shotErr: 0.5, misjudge: 0.12, tackleBehind: 0.03, slide: 0.05, shootBias: 0, lineErr: 0.45, offsideTrap: 0, keeperHold: [0.9, 2.0], takerDelay: [0.7, 1.6], keeperPosErr: 0.4, keeperMiss: 0.1, pressSpeed: 1, tackleP: 0.6, markLoose: 1, jockey: 0.7, keeperSkill: 0.3 },
-  zor: { decideHz: 10, react: 0.15, passErr: 0.45, shotErr: 0.28, misjudge: 0.04, tackleBehind: 0.01, slide: 0.06, shootBias: 0.05, lineErr: 0.25, offsideTrap: 0.12, keeperHold: [0.8, 1.6], takerDelay: [0.5, 1.2], keeperPosErr: 0.2, keeperMiss: 0.02, pressSpeed: 1.05, tackleP: 0.7, markLoose: 0.85, jockey: 0.95, keeperSkill: 0.5 },
+  kolay: { decideHz: 5, react: 0.25, passErr: 1.6, shotErr: 0.9, misjudge: 0.25, tackleBehind: 0.08, slide: 0.03, shootBias: -0.05, lineErr: 0.75, offsideTrap: 0, keeperHold: [1.2, 2.2], takerDelay: [1.0, 2.0], keeperPosErr: 0.7, keeperMiss: 0.35, pressSpeed: 0.75, tackleP: 0.3, markLoose: 1.8, jockey: 0.3, keeperSkill: 0 },
+  orta: { decideHz: 7, react: 0.2, passErr: 0.9, shotErr: 0.5, misjudge: 0.12, tackleBehind: 0.03, slide: 0.05, shootBias: 0, lineErr: 0.45, offsideTrap: 0, keeperHold: [0.9, 2.0], takerDelay: [0.7, 1.6], keeperPosErr: 0.25, keeperMiss: 0.1, pressSpeed: 1, tackleP: 0.6, markLoose: 1, jockey: 0.7, keeperSkill: 0.5 },
+  zor: { decideHz: 10, react: 0.15, passErr: 0.45, shotErr: 0.28, misjudge: 0.04, tackleBehind: 0.01, slide: 0.06, shootBias: 0.05, lineErr: 0.25, offsideTrap: 0.12, keeperHold: [0.8, 1.6], takerDelay: [0.5, 1.2], keeperPosErr: 0.08, keeperMiss: 0.02, pressSpeed: 1.05, tackleP: 0.7, markLoose: 0.85, jockey: 0.95, keeperSkill: 1 },
 }
 
 const param = (k: string): string | null => {

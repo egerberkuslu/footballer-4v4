@@ -5,6 +5,7 @@ import { world } from '../src/sim.ts'
 import { game } from '../src/game/store.ts'
 import { BALL_R, PITCH_L } from '../src/pitch.ts'
 import { Rules } from '../src/rules/engine.ts'
+import { aiStats } from '../src/ai/brain.ts'
 import { updateAI, resetAI, passHints, hintDbg, humanReceiver } from '../src/ai/brain.ts'
 import { seedAI, setAiLevel } from '../src/ai/config.ts'
 import { stepLocomotion } from '../src/control/locomotion.ts'
@@ -266,3 +267,5 @@ console.log(`  insan baskidayken (3 m) 2.5 m icinde AI arkadas da var ${pct(st.d
 console.log(`  ipucu teshis: degerlendirme ${hintDbg.n}, ofsayt ${hintDbg.off}, ort marj ${(hintDbg.sum / (hintDbg.n || 1)).toFixed(2)} s, ort mesafe ${(hintDbg.d / (hintDbg.n || 1)).toFixed(1)} m; karar ${hintDbg.calls} yakin(<3m) ${hintDbg.close} uzak ${hintDbg.far}; karar basina acik secenek ${(st.hintN / (hintDbg.calls || 1)).toFixed(2)}`)
 
 if (process.env.DIAG) { const D = globalThis.dg; console.log('DIAG tasiyici-rakip', (D.c / D.n).toFixed(1), 'arkadas-tasiyici', (D.md / D.k).toFixed(1), 'arkadas-rakip', (D.mo / D.k).toFixed(1)) }
+
+console.log(`  AI ayakta mudahale ${aiStats.tackles}, kayma ${aiStats.slides}`)

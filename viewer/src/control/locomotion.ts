@@ -49,6 +49,16 @@ import {
   V_MIN,
 } from './locomotionApi'
 
+const _ENV = (globalThis as { process?: { env?: Record<string, string> } }).process?.env
+// A/B testi icin ortam degiskenleri (varsayilan = guncel degerler)
+const TUNE = {
+  mu: Number(_ENV?.LOCO_MU ?? 0.18),
+  hitR: Number(_ENV?.LOCO_HITR ?? 0),
+  body: Number(_ENV?.LOCO_BODY ?? 0.35),
+  stop: Number(_ENV?.LOCO_STOP ?? 0.6),
+  idle: _ENV?.LOCO_IDLE !== '0',
+  queue: _ENV?.LOCO_QUEUE !== '0',
+}
 const HL = PITCH_L / 2
 const HW = PITCH_W / 2
 const FOOT = 0.45 // ayak noktasi: govdenin bu kadar onu
@@ -162,8 +172,10 @@ export function passSpeed(d: number, arrive = 4.5) {
 // yuvarlanma spini: kaymadan yuvarlansin (sim/ball groundContact ile ayni isaret)
 const rollSpin = (vx: number, vz: number): Vec3 => ({ x: vz / BALL_R, y: 0, z: -vx / BALL_R })
 
+const BISECT = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env ?? {} // bisect bayraklari (yalniz Node testleri)
 let shotFromX = 0 // son vurusun yapildigi x (dalista yakin sut olasiligi icin)
 let shotFromT = -9
+let shotByHuman = false // son vurusu insan kontrolundeki oyuncu yapti (ayakta kurtarma zari yalniz insan sutlarinda)
 let standT = -99 // ayakta kurtaris zarinin atildigi sut
 let standOk = true
 
@@ -172,6 +184,7 @@ function kickBall(p: Player, v: Vec3, w: Vec3) {
   const b = world.ball
   shotFromX = b.x
   shotFromT = T
+  shotByHuman = p.controlled || game.remote.has(p.id) // uzak insan (misafir) de insan sayilir
   if (b.y < BALL_R) b.y = BALL_R
   world.kick(v, w)
   noPickup[p.id] = T + 0.3
@@ -259,6 +272,7 @@ const trapDist = (p: Player) => Math.min(ballDist(p), Math.max(0, Math.hypot(wor
 // --------------------------------------------------------------- aksiyonlar
 function startAction(p: Player, a: NonNullable<PlayerInput['action']>) {
   if (a.type === 'dive' && p.role !== 'kaleci') return
+  if (a.type === 'dive' && BISECT.KS_DIVEOFF) return
   let ax = a.aim.x
   let az = a.aim.z
   // mudahale: hedef topsa topun temas anindaki (0.22 s) konumuna one hedefle (kosan surucunun topu onde gider)
@@ -466,7 +480,7 @@ function runAction(p: Player, act: Act, gdt: number) {
         const rx = q.x - p.x
         const rz = q.z - p.z
         const rd = Math.hypot(rx, rz)
-        if (rd < 0.6 && rx * act.dx + rz * act.dz > 0) k = 0
+        if (rd < TUNE.stop && rx * act.dx + rz * act.dz > 0) k = 0
       }
       p.vx = act.dx * TACKLE_LUNGE * k
       p.vz = act.dz * TACKLE_LUNGE * k
@@ -478,7 +492,7 @@ function runAction(p: Player, act: Act, gdt: number) {
       // top bacak boyunca (govdeden bacak ucuna) herhangi bir noktaya yakinsa ulasilir (ONCE topa bakilir)
       const dBall = segDist(b.x, b.z, p.x, p.z, lx, lz)
       const owner = game.players.find((q) => q.hasBall && q.team !== p.team)
-      let ok = b.y < 0.6 && dBall < TACKLE_HIT_R
+      let ok = b.y < 0.6 && dBall < (TUNE.hitR || TACKLE_HIT_R)
       // zamanlama/aci: sahip hizli kosuyorsa, yon degistirdiyse ya da mudahale arkadan/yandan geliyorsa topu kacirabilir.
       // Kacirma = top degdi ama alinamadi (sektirir, faul degil); gercekten ıska ise temas yok
       let slip = false
@@ -524,7 +538,7 @@ function runAction(p: Player, act: Act, gdt: number) {
       for (const q of game.players) {
         if (q.team === p.team || q.sentOff) continue
         const dBody = segDist(q.x, q.z, p.x, p.z, lx, lz)
-        if (dBody >= 0.35) continue
+        if (dBody >= TUNE.body) continue
         if (ok) {
           // top once: govde yalniz bacak topa degdikten sonra sürtünür
           contactWith(p, q, 'tackle', 0.2 + Math.min(0.15, Math.hypot(p.vx, p.vz) / 24), true)
@@ -678,8 +692,12 @@ function keeperSave(p: Player) {
     return
   }
   if (!inHands(p)) return
-  // ayakta kurtaris da olasiliksal: sut basina bir kez (>8 m/s); basarisizsa eller tutmaz, top kapsulden sekebilir/gecebilir
-  if (sp > 8 && shotFromT !== standT) {
+  // ayakta kurtaris da olasiliksal: sut basina bir kez (>3 m/s, son vurustan 4 s icinde); basarisizsa eller tutmaz, top kapsulden sekebilir/gecebilir
+  // ayakta kurtarma zari yalniz INSAN sutlarinda acik (bisect: AI-AI'da acikken gol/mac 2 kat artti); KS_ROLL=off|8|3 ile zorlanabilir
+  const roll = BISECT.KS_ROLL ?? (shotByHuman ? '3' : 'off')
+  if (roll === 'off') standOk = true
+  const shotLive = roll === 'off' ? false : roll === '3' ? T - shotFromT < 4 : sp > 8 // son 4 s icinde bir vurustan gelen top (kisa/yuvarlanan sut dahil)
+  if (sp > 3 && shotLive && shotFromT !== standT) {
     standT = shotFromT
     const [fx, fz] = fwd(p)
     const lat = Math.abs((b.x - p.x) * fz - (b.z - p.z) * fx)
@@ -687,7 +705,10 @@ function keeperSave(p: Player) {
     const sd = T - shotFromT < 6 ? Math.abs(gx - shotFromX) : 12
     standOk = Math.random() < Math.min(0.97, saveProb(sp, margin, b.y, sd, keeperTune.skill) * keeperTune.stand)
   }
-  if (sp > 8 && !standOk) return
+  if (sp > 3 && shotLive && !standOk) {
+    if (BISECT.KS_NOPICK === '1') noPickup[p.id] = T + 0.8 // tutamadi: sekip kalan topu hemen toplamasin (kurtaris sayilmaz)
+    return
+  }
   if (sp > PUNCH_SPEED) return // kapsul carpismasi sektirir
   if (sp > CATCH_SPEED) {
     // yumrukla: sahanin icine, yana
@@ -856,7 +877,7 @@ function possession(gdt: number) {
   }
   const o = game.players.find((q) => q.hasBall)
   // duran topta bekleyen taker topu cekmesin (top kipirdayinca kurallar oyunu erken baslatiyordu); yalniz hareket varsa surer
-  const idleTaker = !playing && !game.inputs[o?.id ?? 0]?.move.x && !game.inputs[o?.id ?? 0]?.move.z
+  const idleTaker = TUNE.idle && !playing && !game.inputs[o?.id ?? 0]?.move.x && !game.inputs[o?.id ?? 0]?.move.z
   if (o && o.actionLock <= 0 && keeperHolding !== o.id && !idleTaker) dribble(o, gdt)
 }
 
@@ -1238,7 +1259,7 @@ function slot(n: number): DynCollider {
   let c = cols[n]
   if (!c) c = cols[n] = { a: [0, 0, 0], b: [0, 0, 0], r: BODY_R, vx: 0, vy: 0, vz: 0, e: 0.3, mu: 0.4, tag: 'oyuncu', id: 0 }
   c.e = 0.3
-  c.mu = 0.18 // dusuk: yuvarlanan sert top govdede havaya firlamasin (B2 probu)
+  c.mu = TUNE.mu // dusuk: yuvarlanan sert top govdede havaya firlamasin (B2 probu)
   c.tag = 'oyuncu'
   return c
 }

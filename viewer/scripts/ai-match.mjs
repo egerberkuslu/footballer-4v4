@@ -29,6 +29,9 @@ seedAI(SEED)
 // AI_OFF=duel,shield,touch ile davranis kapatilir (A/B)
 for (const k of (process.env.AI_OFF ?? '').split(',').filter(Boolean)) aiFlags[k] = false
 setAiLevel(LEVEL)
+if (process.env.NOCURL) aiFlags.curl = false
+if (process.env.NOTK) { const { AI } = await import('../src/ai/config.ts'); AI.tackleP = 0; AI.slide = 0 }
+if (process.env.KS) (await import('../src/sim/keeperDive.ts')).keeperTune.skill = Number(process.env.KS)
 setMockRand(rand)
 world.seed(SEED)
 resetAI()

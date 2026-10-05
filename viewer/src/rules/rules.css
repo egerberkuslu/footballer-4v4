@@ -255,3 +255,48 @@
   border-left: 3px solid #ff3b30;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
 }
+
+/* maç sonu düğmeleri */
+.rh-ft {
+  position: absolute;
+  top: 46%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  pointer-events: auto;
+}
+.rh-ft button {
+  padding: 10px 22px;
+  border-radius: 6px;
+  border: 0;
+  border-bottom: 3px solid #f2c230;
+  background: rgba(12, 16, 22, 0.82);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+.rh-ft button.alt {
+  border-bottom-color: #8a93a0;
+}
+.rh-ft button:hover {
+  background: rgba(40, 48, 60, 0.92);
+}
+.rh-ft kbd {
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font: inherit;
+  font-size: 12px;
+  opacity: 0.7;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+.rh-ft-wait {
+  padding: 10px 18px;
+  border-radius: 6px;
+  background: rgba(12, 16, 22, 0.82);
+  font-weight: 700;
+}

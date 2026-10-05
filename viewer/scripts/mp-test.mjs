@@ -196,18 +196,28 @@ try {
       document.dispatchEvent(new Event('visibilitychange'))
       return document.hidden
     }, h)
+  // yalniz ana tuval kareleri sayilir (hedefsiz render); GPU kumas adimlari render hedefine yazar, arka planda kosabilir
+  await host.evaluate(() => {
+    const gl = window.__r3f.gl
+    const orig = gl.render.bind(gl)
+    window.__mainF = 0
+    gl.render = (...a) => {
+      if (gl.getRenderTarget() === null) window.__mainF++
+      return orig(...a)
+    }
+  })
   const hid = await setHidden(host, true)
-  const f0 = await host.evaluate(() => window.__r3f.gl.info.render.frame)
+  const f0 = await host.evaluate(() => window.__mainF)
   const w0 = await host.evaluate(() => __world.time)
   const s0 = await guest.evaluate(() => __game.match.clock)
   await host.waitForTimeout(3000)
   const w1 = await host.evaluate(() => __world.time)
   const s1 = await guest.evaluate(() => __game.match.clock)
-  const f1 = await host.evaluate(() => window.__r3f.gl.info.render.frame)
+  const f1 = await host.evaluate(() => window.__mainF)
   ok('host arka planda simulasyon suruyor', hid && w1 - w0 > 2 && f1 === f0, `gizli=${hid}, host sim +${(w1 - w0).toFixed(2)} s, render ${f1 - f0} kare, misafir saat +${(s1 - s0).toFixed(2)} s`)
   await setHidden(host, false)
   await host.waitForTimeout(500)
-  const f2 = await host.evaluate(() => window.__r3f.gl.info.render.frame)
+  const f2 = await host.evaluate(() => window.__mainF)
   ok('gorunur olunca render geri geldi', f2 > f1, `+${f2 - f1} kare`)
 
   const st = await guest.evaluate(() => ({ ping: __mp.mp.ping, conn: __mp.mp.conn }))

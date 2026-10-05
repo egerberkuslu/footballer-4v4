@@ -94,7 +94,7 @@ const smooth = (u: number) => (u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u))
 
 /** kurtarma olasiligi: hiz, menzil payi, yukseklik ve yakin sut */
 /** kurtarma olasiligi genel carpani (oyun ici orani ayarlamak icin tek dugme) */
-export const keeperTune = { gain: 1.2, skill: 0.5, stand: Number((globalThis as { process?: { env?: Record<string, string> } }).process?.env?.KSTAND ?? 1) }
+export const keeperTune = { gain: Number((globalThis as { process?: { env?: Record<string, string> } }).process?.env?.KGAIN ?? 0.85), skill: 0.5, stand: Number((globalThis as { process?: { env?: Record<string, string> } }).process?.env?.KSTAND ?? 1) }
 /** locomotion'un saati (s): DiveSpec zamanlari bu saatte; animasyon diveState(spec, diveClock.t) okur */
 export const diveClock = { t: 0 }
 export function saveProb(speed: number, margin: number, yc: number, shotDist: number, skill: number): number {
@@ -291,12 +291,17 @@ export function diveState(sp: DiveSpec, t: number): DiveState {
     // temastan sonra el govdeyle birlikte kayar, yere dogru iner
     const hc = horiz(sp, sp.tc)
     const dx = h.s - hc.s
-    const fall = smooth((t - sp.tLand) / 0.3)
-    hand = {
-      x: tgt.x + sp.dir.x * dx,
-      y: Math.max(0.1, t > sp.tLand ? tgt.y + (0.12 - tgt.y) * fall : tgt.y),
-      z: tgt.z + sp.dir.z * dx,
-    }
+    // inisten sonra el, yerde tasinan top noktasina (kok + 0.55 m ileri, 0.2 m yuksek) gecer: IK gercek temasa kilitlenir
+    const fall = smooth((t - sp.tLand) / 0.2)
+    const fx = x + sp.dir.x * 0.55
+    const fz = z + sp.dir.z * 0.55
+    const ax = tgt.x + sp.dir.x * dx
+    const az = tgt.z + sp.dir.z * dx
+    const ay = Math.max(0.1, tgt.y)
+    hand =
+      t > sp.tLand
+        ? { x: ax + (fx - ax) * fall, y: ay + (0.2 - ay) * fall, z: az + (fz - az) * fall }
+        : { x: ax, y: ay, z: az }
   }
   let phase: DivePhase
   let u: number

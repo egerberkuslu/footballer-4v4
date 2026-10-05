@@ -47,6 +47,15 @@ await p.click('.boot-play')
 await p.waitForTimeout(1500)
 await p.screenshot({ path: `${pre}-menu.png` })
 console.log('Oyna sonrasi', JSON.stringify(await gapsOf(tPlay)), 'stats', JSON.stringify(await p.evaluate(() => window.__boot.stats)))
+// Kol Ayarlari (menuden)
+await p.click('text=Kol Ayarları', { timeout: 30000 }).catch((e) => console.log('kol ayarlari dugmesi yok', e.message.split('\n')[0]))
+await p.waitForSelector('.gps-card', { state: 'attached', timeout: 60000 }).catch(() => console.log('kol ayarlari acilmadi'))
+await p.waitForTimeout(800)
+await p.screenshot({ path: `${pre}-kol.png` })
+console.log('kol ayarlari acik:', await p.locator('.gps-card').count())
+await p.keyboard.press('Escape')
+await p.waitForTimeout(500)
+console.log('Esc sonrasi:', await p.locator('.gps-card').count())
 // tek oyunculu mac
 async function curtainRun(label, action) {
   await p.evaluate(() => {

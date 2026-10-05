@@ -100,3 +100,10 @@ Bilinen kalan uyarılar: Forma koltuk altında ≤10 cm gerilme; kaleci pozunda 
 - Kumaş dokuması kit_make.py'de (`weave()`), ref (hakem) paleti açıldı.
 - Forma eteği: s6_web.py sonunda HEM_GAP ile şort üstüne yaklaştırılıyor (hem ucu şortun ~7 mm üstü).
 - Forma/şort maskelerini yeniden üretmek gerekmedi: ana modelde yırtık yok, sorun varyant atlas uyuşmazlığıydı.
+
+## E2-insan son durum (2026-10-05, dördüncü tur)
+- Varyantlar: ana (futbolcu.glb), v2 (koyu ten, geriye taranmış saç, hakem), v3 (açık ten, kısa saç), v4 (kıvırcık kaleci); hepsinin `_lod1`'i var. Üretim: `human/run_variant.sh <ad>` + ortam değişkenleri (HAIR, HAIR_STYLE=fringe|back|curly, HAIR_CLOSE, HAIR_N, HAIR_SEG, V_*, SKIN_MUL, HAIR_MUL). Örnek ayarlar bu notun yukarısında ve `wip/e2/tgts.sh`.
+- Kit atlasları: ana model `kits/*.png` (2048², paletli); varyantlar `kits/v2|v3|v4/` (home/away 1024², ref/gk_* 2048², yalnız kullanılan çiftler). Varyant UV'leri farklı olduğundan ana atlasla kullanılamaz. kits/ toplamı 15.7 MB; dokuma genliği düşük, geri açma.
+- Saç: `hair_cards.py` kartları (tepe odaklı ilk 1/9, opak taban, atlas köşesinde opak blok), `paint_scalp` ile deri boyama. Balık sırtı deseni atlas değil, test sahnesinin gölge acne'siydi.
+- Şort: pin değişti (bel 1, 8 cm altı 0.1, ön üst kalça 0.2), paça uyluğa bağlı (`SORT_STICK`), küçük delikler kapanıyor; hakem şort yarığı N2'nin uyluk kapsül yarıçapıyla kapandı. Forma eteği şorta yaklaştırıldı ve halka yumuşatıldı.
+- Test araçları: `human/render.py` (ense, ense_yan, kalca, kalca_yan, tepe), `wip/e2/short_test.py`, `wip/e2/bnd.py` (açık kenar taraması), test sahnesi ve `scripts/.i-gseq.mjs`.

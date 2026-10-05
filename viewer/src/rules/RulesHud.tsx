@@ -7,6 +7,7 @@ import { isVarActive } from '../var/store'
 import { sfx } from './audio'
 import { TEAM_NAMES } from './engine'
 import { currentRules } from './instance'
+import { isGuest } from '../mp/role'
 import './rules.css'
 
 const PHASE_TEXT: Partial<Record<string, string>> = {
@@ -64,6 +65,53 @@ function SoundCtl() {
   )
 }
 
+/** Maç sonu: Yeniden oyna (Enter / kol ✕) ve Ana menü (Esc / kol ○). Çok oyunculuda misafir yeniden başlatamaz. */
+function FullTimeButtons() {
+  const guest = isGuest()
+  useEffect(() => {
+    const again = () => {
+      if (!guest) currentRules().start()
+    }
+    const menu = () => {
+      location.href = location.pathname + '?menu=1'
+    }
+    const key = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') again()
+      else if (e.key === 'Escape') menu()
+      else return
+      e.preventDefault()
+    }
+    window.addEventListener('keydown', key)
+    // kol: standart eslemede 0 = ✕/A, 1 = ○/B; kenar algilama
+    let id = 0
+    let p0 = true
+    let p1 = true // acilista basili kalmis dugme tetiklemesin
+    const poll = () => {
+      const gp = (navigator.getGamepads?.() ?? []).find((g) => g && g.connected)
+      const a = !!gp?.buttons[0]?.pressed
+      const b = !!gp?.buttons[1]?.pressed
+      if (a && !p0) again()
+      else if (b && !p1) menu()
+      p0 = a
+      p1 = b
+      id = requestAnimationFrame(poll)
+    }
+    id = requestAnimationFrame(poll)
+    return () => {
+      window.removeEventListener('keydown', key)
+      cancelAnimationFrame(id)
+    }
+  }, [guest])
+  return (
+    <div className="rh-ft">
+      {guest ? <div className="rh-ft-wait">Host bekleniyor</div> : <button onClick={() => currentRules().start()}>Yeniden oyna <kbd>Enter</kbd></button>}
+      <button className="alt" onClick={() => (location.href = location.pathname + '?menu=1')}>
+        Ana menü <kbd>Esc</kbd>
+      </button>
+    </div>
+  )
+}
+
 export function RulesHud() {
   const clock = useRef<HTMLSpanElement>(null)
   const count = useRef<HTMLDivElement>(null)
@@ -85,6 +133,7 @@ export function RulesHud() {
       if (adv.current) {
         const on = m.advantageUntil > 0
         adv.current.style.opacity = on ? '1' : '0'
+        adv.current.style.visibility = on || m.phase === 'play' ? 'visible' : 'hidden' // maç sonu/devre arasında DOM'da da görünmesin
         if (on) adv.current.style.setProperty('--k', String(Math.max(0, (m.advantageUntil - m.clock) / 2)))
       }
       // duran top geri sayimi (3-2-1): her tam saniyede yeniden atar
@@ -171,6 +220,7 @@ export function RulesHud() {
         </div>
       )}
       {hint && <div className="rh-hint">{hint}</div>}
+      {m.phase === 'fulltime' && <FullTimeButtons />}
       <div ref={count} className="rh-count" />
       <SoundCtl />
     </div>
