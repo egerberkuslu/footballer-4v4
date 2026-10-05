@@ -152,3 +152,22 @@ Hipotez H2: 4v4'te eğitilen GNN politikası eğitimsiz 5v5, 7v7 ve 11v11'e gene
 - **Tek eksen:** yalnızca takım büyüklüğü değişir; fizik, oyuncu hızları, top ve kurallar aynı kalır (üç ölçekte de sabit simülasyon sürümü).
 
 **4'e 4 rolleri (Ege, 2026-10-05):** kaleci (KL), defans (DEF), orta saha (ORT), forvet (FRV), takımda birer tane. Roller politikaya rol gömmesi (role embedding) ile verilir; temel konum ve görev rolden gelir (DEF: top ile kale arasında hat tutma, ORT: bağlantı ve boşluk, FRV: yüksek konum ve bitiricilik, KL: kaleci kontrolleri). Karşılaştırılacak rol tasarımları: (1) paylaşımlı parametre + rol gömmesi (varsayılan), (2) rol başına ayrı baş (head), (3) rolsüz. Rol sabit atanır, oyun içinde değişmez (rol takası ayrı deney). Oyundaki mevcut yapay zekâ "destek/derinlik slotları" ile çalışıyor; el yazması taban (B0, B2) bu dört role açıkça eşlenmelidir ki karşılaştırma adil olsun. Rol bazlı istatistikler: rol başına ısı haritası, pas ve top kaybı, konum disiplini.
+
+## 13. Açık kaynaklı dil/karar modelleri ile karşılaştırma (ikinci aşama)
+
+Ege'nin isteği: RL takımlarını açık kaynaklı karar modelleriyle de denemek. İstekte geçen isimler ("selfm", "laya") tam anlaşılmadı; varsayım: SmolLM ve Llama benzeri açık kaynaklı dil modelleri (LLM). Netleşince model listesi güncellenir. Bu, Paper D'deki "DRL ile LLM orkestratör, model boyutu spektrumu" çizgisinin futbol karşılığıdır.
+
+**Neden doğrudan 10 Hz LLM kontrolü olmaz:** 8 ajan × 10 Hz = saniyede 80 karar; küçük LLM'in bile bir kararı ~0,1–0,3 s sürer. Bu yüzden LLM yüksek düzey taktikçi olur, düşük düzey RL/el yazması yetenekler uygular.
+
+| # | Yöntem | Açıklama |
+|---|---|---|
+| L1 | Sıfır-atış LLM taktikçi | Metin durumu (roller, konumlar, top, skor, kalan süre) → JSON komut (her oyuncu için hedef bölge, pas alıcısı, baskı/yerleşim); 1–2 Hz, aralarda son komut tutulur; düşük düzey: el yazması yetenekler |
+| L2 | LLM + RL düşük düzey | Aynı taktikçi, alt görevleri (git, pas ver, şut at, baskı yap) RL ile eğitilmiş yetenek politikaları yürütür (hiyerarşik) |
+| L3 | Damıtılmış küçük LLM | RL politikasının (M3) kayıtlı yörüngelerinden davranış klonlama/ince ayar (LoRA), metin durum → eylem |
+| L4 | Decision Transformer / çevrimdışı RL | Aynı kayıtlardan dizi modeli (hedef getiriye koşullu), RL ile aynı veri bütçesi |
+
+**Model spektrumu (Paper D gibi boyut ekseni):** yaklaşık 0,1–0,5B (SmolLM sınıfı), 1–3B (Llama 3.2 1B/3B, Qwen2.5), 7B (Llama/Qwen/Gemma sınıfı); hepsi çıkarım ağırlıklı, DGX Spark'ta (128 GB) llama.cpp ya da vLLM ile yerel koşar. Aynı komut şeması, aynı karar sıklığı, aynı gözlem bilgisi.
+
+**Adalet ve geçerlilik:** aynı gözlem bilgisi (LLM'e RL'in görmediği bilgi verilmez), aynı karar sıklığı, aynı seed'ler; istem (prompt) varyasyonları ve sıcaklık tohumları raporlanır; LLM çağrı sayısı, gecikme ve belirteç maliyeti RL'in hesap maliyetiyle birlikte tabloya girer (başarı/maliyet eğrisi); bozuk JSON ve geçersiz komut oranı raporlanır; en iyi istem seçimi yalnızca ara ölçütle (doğrulama maçları), nihai turnuva ayrı. LLM'ler eğitim maliyeti olmayan tabanlar gibi değil, çıkarım bütçesiyle birlikte sunulur.
+
+**Bütçe:** çıkarım ağırlıklı olduğu için hafta sonu bütçesine sığar (turnuva başına birkaç yüz maç × 2 Hz × 4 ajan × model sayısı); L3/L4 için ek eğitim kısa (LoRA, saatler). Öncelik: L1 ve L2; L3 ve L4 zaman kalırsa.
