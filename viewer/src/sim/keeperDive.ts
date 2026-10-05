@@ -74,6 +74,7 @@ export const diveHook: { fn?: (spec: DiveSpec, inp: DiveIn) => void } = {}
 const specs = new Map<number, DiveSpec>()
 export const diveOf = (id: number) => specs.get(id)
 export const clearDive = (id: number) => specs.delete(id)
+export const clearAllDives = () => specs.clear()
 
 export interface DiveIn {
   id: number

@@ -145,6 +145,8 @@ export class World {
   time = 0
   goals = 0
   shots = 0
+  /** false: kale agi XPBD fizigi atlanir (RL basiz kosu); top-torba cozumsel kural aynen isler */
+  netPhysics = true
   lastShot: ShotKind = 'yerden'
   private scored = false
   private listeners = new Set<() => void>()
@@ -429,6 +431,29 @@ export class World {
     return predictTrajectory(start, v, w, steps, dt, ground)
   }
 
+  /** RL: tum bolum durumunu sifirla (top ortada, sayaclar 0, tohumlu rastgelelik) */
+  resetEpisode(seed: number) {
+    const b = this.ball
+    b.x = b.px = 0
+    b.y = b.py = BALL_R
+    b.z = b.pz = 0
+    b.vx = b.vy = b.vz = 0
+    b.wx = b.wy = b.wz = 0
+    this.time = 0
+    this.goals = 0
+    this.shots = 0
+    this.scored = false
+    this.live = false
+    this.held = false
+    this.still = 0
+    this.fired.clear()
+    this.dynamicColliders = []
+    this.dynT = 0
+    this.hot = [0, 0]
+    this.rand = mulberry32(seed >>> 0)
+    this.syncFaces()
+  }
+
   resetBall() {
     const b = this.ball
     b.x = b.px = this.side * (PITCH_L / 2 - SPOT_DIST)
@@ -546,6 +571,14 @@ export class World {
     if (dt <= 0) return
     const b = this.ball
     const sp = Math.sqrt(b.vx * b.vx + b.vy * b.vy + b.vz * b.vz)
+    if (!this.netPhysics) {
+      // yalniz top: ag dugumleri cozulmez
+      const nB = this.held ? 0 : Math.min(MAX_SUB * 2, Math.max(Math.ceil(dt / H_BALL - 1e-6), Math.ceil((sp * dt) / BALL_CLEAR)))
+      this.dynT = 0
+      if (nB === 0) this.time += dt
+      for (let i = 0; i < nB; i++) this.ballSubstep(dt / nB)
+      return
+    }
     let anyHot = false
     for (let gi = 0; gi < 2; gi++) {
       if (this.nearGoal(this.goalRanges[gi], 3)) {

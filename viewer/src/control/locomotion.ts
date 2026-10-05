@@ -6,7 +6,7 @@ import { BALL_R, PITCH_L, PITCH_W } from '../pitch'
 import { world, type DynCollider } from '../sim'
 import { G, freeStep, newBall } from '../sim/ball'
 import { CLIP_LEN } from '../anim/timing'
-import { DOWN_T, diveClock, diveOf, diveState, keeperTune, planDive, saveProb } from '../sim/keeperDive'
+import { DOWN_T, clearAllDives, diveClock, diveOf, diveState, keeperTune, planDive, saveProb } from '../sim/keeperDive'
 import { footTiming } from '../anim/events'
 import { CURL_W, solveShot } from './aim'
 import { CURL_STEPS } from './store'
@@ -1386,6 +1386,32 @@ export function stepLocomotion(gdt: number) {
 
 /** ayar/test anahtarlari */
 const ENV = (globalThis as { process?: { env?: Record<string, string> } }).process?.env
+/** RL: modul durumunu sifirla (bolum basi); oyuncu/top durumunu cagiran kurar */
+export function resetLocomotion() {
+  clearAllDives()
+  acts.length = 0
+  lastTouch.length = 0
+  noPickup.length = 0
+  kickT.length = 0
+  holdUntil.length = 0
+  pairT.clear()
+  T = 0
+  keeperHolding = -1
+  cols.length = 0
+  shotFromX = 0
+  shotFromT = -9
+  shotByHuman = false
+  standT = -99
+  standOk = true
+  shieldHeld.length = 0
+  dribPhase.length = 0
+  escapeT.length = 0
+  cutT.length = 0
+  prevM.length = 0
+  prevSp.length = 0
+  lastDrib.length = 0
+}
+
 export const locoTuning = { shield: ENV?.NOSHIELD !== '1' }
 
 /** test/ayiklama */

@@ -133,7 +133,12 @@ export function resetAI() {
   trapUntil[0] = trapUntil[1] = 0
   humanKick = null
   threat[0] = threat[1] = -1
+  threatMiss[0] = threatMiss[1] = false
   lastPhase = ''
+  lastRestart = null
+  restartT = 0
+  takerDelay = 1
+  tick = 0
 }
 
 function brainOf(id: number): Brain {
